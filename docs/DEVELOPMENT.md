@@ -142,7 +142,7 @@ conjure/
 │   ├── page.tsx                       # Landing page
 │   ├── globals.css                    # Tailwind + global styles
 │   ├── (auth)/                        # Auth pages (login, register)
-│   │   └── layout.tsx                 # Centered layout
+│   │   └── layout.tsx                 # Split-screen layout (brand left, form right)
 │   ├── (app)/                         # Authenticated pages
 │   │   ├── layout.tsx                 # Sidebar shell
 │   │   ├── session/
@@ -221,8 +221,9 @@ The mockup defines **layout and structure**. Aesthetics may be refined per-scree
 
 | Token | Value |
 |---|---|
-| Body font | DM Sans |
-| Mono font | IBM Plex Mono |
+| Heading font | Plus Jakarta Sans |
+| Body font | Inter |
+| Mono font | JetBrains Mono |
 | Background | `#F7F6F3` |
 | Surface | `#FFFFFF` |
 | Text | `#1A1A18` |

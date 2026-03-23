@@ -2,7 +2,7 @@
 
 > Describe your infrastructure. We generate the diagram, the code, and provision it.
 
-Conjure is a **Prompt-to-Infrastructure** web app. Chat with an AI about your cloud infrastructure — it generates and iterates on an architecture diagram in real time, then converts it to Terraform HCL you can deploy to AWS or GCP.
+Conjure is a **Prompt-to-Infrastructure** web app. Chat with an AI about your cloud infrastructure — it generates and iterates on an architecture diagram in real time, then converts it to Terraform/OpenTofu HCL you can deploy to AWS or GCP.
 
 ---
 
@@ -21,9 +21,9 @@ Your infrastructure is defined by two files that work as a pair:
 - **Mermaid diagram** — topology (what exists and how it connects)
 - **Config YAML** — everything else (resource types, instance sizes, ports, networking)
 
-Together they are the source of truth. Terraform HCL is always derived from them — never edited directly.
+Together they are the source of truth. Terraform/OpenTofu HCL is always derived from them — never edited directly.
 
-When the diagram looks right, click **Generate Code** → Terraform HCL appears alongside. Deploy from the browser, or export to your own repo.
+When the diagram looks right, click **Generate Code** → choose Terraform or OpenTofu, and HCL appears alongside. Deploy from the browser, or export to your own repo.
 
 ---
 
@@ -35,7 +35,7 @@ When the diagram looks right, click **Generate Code** → Terraform HCL appears 
 - **Properties drawer** — click any node to see and edit its config inline
 - **Multi-provider** — AWS and GCP
 - **Free by default** — free LLM models via OpenRouter, no API key needed to start
-- **Bring your own key** — add your Anthropic or Google API key for premium models (Claude, Gemini Pro)
+- **Bring your own key** — add your Anthropic API key for premium models (Claude Sonnet, Claude Opus)
 - **Deploy from the browser** — configure credentials, state backend, run plan and apply
 - **Export without deploying** — download .zip or open a PR directly
 - **Visualize existing infra** — import a GitHub repo and Conjure renders what's already there
@@ -50,14 +50,14 @@ When the diagram looks right, click **Generate Code** → Terraform HCL appears 
 |---|---|
 | Frontend + Backend | Next.js (App Router, API routes) |
 | Database | Supabase (Postgres) |
-| Auth | Supabase Auth (GitHub, Google, email/password) |
+| Auth | Supabase Auth (GitHub OAuth, email/password) |
 | Credential storage | Supabase Vault |
 | ORM | Prisma |
 | Diagrams | Mermaid.js |
 | Config format | YAML |
 | IaC output | Terraform / OpenTofu |
 | LLM (default) | OpenRouter (free models) |
-| LLM (BYOK) | Anthropic, Google AI |
+| LLM (BYOK) | Anthropic |
 | Deployment | Vercel |
 
 ---
@@ -77,6 +77,20 @@ docker compose up --build      # start dev server
 Open [http://localhost:3000](http://localhost:3000).
 
 For detailed setup, architecture, and coding conventions, see the [Development Guide](docs/DEVELOPMENT.md).
+
+---
+
+## Security
+
+Conjure handles cloud credentials and infrastructure operations. Security is built into every layer:
+
+- **Authentication** — Supabase Auth with email/password and GitHub OAuth. All app routes are protected by middleware.
+- **Row Level Security** — every database table enforces RLS. Users can only access their own sessions, credentials, and data.
+- **Credential encryption** — AWS/GCP keys and user-provided Anthropic API keys are stored via Supabase Vault (encrypted at rest). Decrypted only server-side at the moment of use.
+- **Input sanitization** — Mermaid diagrams rendered with `securityLevel: 'strict'`. YAML parsed in safe mode. LLM output treated as untrusted.
+- **Server-side validation** — all API routes verify authentication and validate input. Client data is never trusted.
+- **No secrets in the browser** — only `NEXT_PUBLIC_*` env vars reach the client. Service keys, database URLs, and credentials are server-only.
+- **Rate limiting** — auth, LLM, and deploy endpoints are rate limited to prevent abuse.
 
 ---
 
