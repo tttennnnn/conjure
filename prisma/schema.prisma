@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Session {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  name           String
+  targetEnv      String   @map("target_env")
+  iacTool        String   @map("iac_tool")
+  model          String
+  mermaidCode    String   @default("") @map("mermaid_code")
+  configYaml     String   @default("") @map("config_yaml")
+  terraformCode  Json?    @map("terraform_code")
+  terraformStale Boolean  @default(false) @map("terraform_stale")
+  githubRepo     String?  @map("github_repo")
+  status         String   @default("active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("sessions")
+}
+
+model CredentialProfile {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  provider      String
+  name          String
+  credentials   String
+  defaultRegion String   @map("default_region")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("credential_profiles")
+}
