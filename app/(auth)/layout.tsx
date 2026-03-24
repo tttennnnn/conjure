@@ -39,10 +39,19 @@ export default function AuthLayout({
 
       {/* Right panel — auth form */}
       <div className="flex w-full shrink-0 flex-col bg-[var(--surface)] lg:w-[400px] lg:justify-center">
-        {/* Mobile header */}
-        <div className="px-9 pt-12 pb-6 lg:hidden">
-          <h1 className="font-[family-name:var(--font-heading)] text-2xl font-bold tracking-tight">Conjure</h1>
-          <p className="mt-1 text-xs text-[var(--muted)]">Prompt-to-Infrastructure</p>
+        {/* Mobile header — dark strip matching desktop branding */}
+        <div className="relative overflow-hidden bg-[var(--text)] px-9 pb-8 pt-12 text-white lg:hidden">
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(ellipse at 20% 80%, rgba(83,74,183,0.3) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(24,95,165,0.25) 0%, transparent 50%)",
+            }}
+          />
+          <div className="relative">
+            <h1 className="font-[family-name:var(--font-heading)] text-2xl font-bold tracking-tight">Conjure</h1>
+            <p className="mt-1 text-sm text-white/50">Prompt-to-Infrastructure</p>
+          </div>
         </div>
         <div className="px-9 pb-10 lg:py-10">
           <div className="w-full max-w-[328px] lg:mx-auto">{children}</div>
