@@ -5,9 +5,8 @@ export default function AuthLayout({
 }>) {
   return (
     <div className="flex min-h-full">
-      {/* Left panel — branding */}
+      {/* Left panel — branding (desktop only) */}
       <div className="relative hidden flex-1 flex-col justify-center overflow-hidden bg-[var(--text)] px-10 py-12 text-white lg:flex">
-        {/* Gradient overlay */}
         <div
           className="pointer-events-none absolute inset-0"
           style={{
@@ -39,8 +38,15 @@ export default function AuthLayout({
       </div>
 
       {/* Right panel — auth form */}
-      <div className="flex w-full shrink-0 items-center justify-center bg-[var(--surface)] px-9 py-10 lg:w-[400px]">
-        <div className="w-full max-w-[328px]">{children}</div>
+      <div className="flex w-full shrink-0 flex-col bg-[var(--surface)] lg:w-[400px] lg:justify-center">
+        {/* Mobile header */}
+        <div className="px-9 pt-12 pb-6 lg:hidden">
+          <h1 className="font-[family-name:var(--font-heading)] text-2xl font-bold tracking-tight">Conjure</h1>
+          <p className="mt-1 text-xs text-[var(--muted)]">Prompt-to-Infrastructure</p>
+        </div>
+        <div className="px-9 pb-10 lg:py-10">
+          <div className="w-full max-w-[328px] lg:mx-auto">{children}</div>
+        </div>
       </div>
     </div>
   );
