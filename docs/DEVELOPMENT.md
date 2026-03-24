@@ -54,7 +54,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | `docker compose exec app bash` | Shell into the container |
 | `docker compose exec app npx prisma migrate dev` | Run database migrations |
 | `docker compose exec app npx prisma generate` | Regenerate Prisma client |
-| `docker compose exec app npm run build` | Check production build |
+| `docker compose exec -e NODE_ENV=production app npm run build` | Check production build |
 | `docker compose down` | Stop everything |
 
 ### 5. Adding a new npm package
@@ -108,11 +108,10 @@ There is no incremental code patching. Code is always fully regenerated.
 |---|---|---|
 | Free models (default) | `openai` package → OpenRouter API | `OPENROUTER_API_KEY` env var |
 | User brings Anthropic key | `@anthropic-ai/sdk` | User's key stored in Supabase Vault |
-| User brings Google key | `@google/generative-ai` | User's key stored in Supabase Vault |
 
 **Free models available out of the box:** Gemini 2.0 Flash, Llama 3.3 70B, GPT-4o mini.
 
-**Premium models (BYOK):** Claude Sonnet, Claude Opus, Gemini Pro.
+**Premium models (BYOK):** Claude Sonnet, Claude Opus.
 
 ### Database
 
