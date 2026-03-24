@@ -4,7 +4,7 @@ import OAuthButtons from "@/components/auth/OAuthButtons";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 function getInitialError(searchParams: URLSearchParams): string {
   if (searchParams.get("error") === "auth_failed") {
@@ -21,6 +21,14 @@ function getHashError(): string {
 }
 
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");

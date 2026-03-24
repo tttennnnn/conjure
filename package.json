@@ -1,5 +1,5 @@
 {
-  "name": "conjure-temp",
+  "name": "conjure",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,18 +10,19 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
-    "@playwright/test": "^1.58.2",
     "@prisma/client": "^7.5.0",
     "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.99.3",
     "mermaid": "^11.13.0",
-    "next": "16.2.1",
+    "next": "^15.5.14",
     "openai": "^6.32.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "yaml": "^2.8.3"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.5",
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -29,7 +30,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.1",
+    "eslint-config-next": "^15.5.14",
     "prisma": "^7.5.0",
     "tailwindcss": "^4",
     "typescript": "^5",

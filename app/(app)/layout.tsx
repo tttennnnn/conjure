@@ -21,13 +21,13 @@ export default async function AppLayout({
 
   return (
     <div className="flex h-full">
-      <aside className="flex w-64 flex-col border-r border-zinc-200">
+      <aside className="flex w-64 flex-col border-r border-[var(--border)]">
         <div className="flex-1 p-4">
           {/* Sidebar — session list */}
         </div>
-        <div className="border-t border-zinc-200 p-4">
+        <div className="border-t border-[var(--border)] p-4">
           <p className="truncate text-sm font-medium">{displayName}</p>
-          <p className="truncate text-xs text-zinc-500">{user.email}</p>
+          <p className="truncate text-xs text-[var(--muted)]">{user.email}</p>
           <SignOutButton />
         </div>
       </aside>
