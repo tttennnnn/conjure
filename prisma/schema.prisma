@@ -37,3 +37,15 @@ model CredentialProfile {
 
   @@map("credential_profiles")
 }
+
+model UserApiKey {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  provider     String
+  encryptedKey String   @map("encrypted_key")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, provider])
+  @@map("user_api_keys")
+}

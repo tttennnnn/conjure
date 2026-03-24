@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import SignOutButton from "@/components/auth/SignOutButton";
 
@@ -28,7 +29,15 @@ export default async function AppLayout({
         <div className="border-t border-[var(--border)] p-4">
           <p className="truncate text-sm font-medium">{displayName}</p>
           <p className="truncate text-xs text-[var(--muted)]">{user.email}</p>
-          <SignOutButton />
+          <div className="mt-2 flex items-center gap-3">
+            <Link
+              href="/settings/api-keys"
+              className="text-sm text-[var(--muted)] hover:text-[var(--text)]"
+            >
+              Settings
+            </Link>
+            <SignOutButton />
+          </div>
         </div>
       </aside>
       <main className="flex-1">{children}</main>

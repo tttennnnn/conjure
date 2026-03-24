@@ -35,7 +35,7 @@ When the diagram looks right, click **Generate Code** → choose Terraform or Op
 - **Properties drawer** — click any node to see and edit its config inline
 - **Multi-provider** — AWS and GCP
 - **Free by default** — free LLM models via OpenRouter, no API key needed to start
-- **Bring your own key** — add your Anthropic API key for premium models (Claude Sonnet, Claude Opus)
+- **Bring your own key** — add your own OpenRouter or Anthropic API key for premium models
 - **Deploy from the browser** — configure credentials, state backend, run plan and apply
 - **Export without deploying** — download .zip or open a PR directly
 - **Visualize existing infra** — import a GitHub repo and Conjure renders what's already there
@@ -57,7 +57,7 @@ When the diagram looks right, click **Generate Code** → choose Terraform or Op
 | Config format | YAML |
 | IaC output | Terraform / OpenTofu |
 | LLM (default) | OpenRouter (free models) |
-| LLM (BYOK) | Anthropic |
+| LLM (BYOK) | Anthropic + OpenRouter |
 | Deployment | Vercel |
 
 ---
@@ -86,7 +86,7 @@ Conjure handles cloud credentials and infrastructure operations. Security is bui
 
 - **Authentication** — Supabase Auth with email/password and GitHub OAuth. All app routes are protected by middleware.
 - **Row Level Security** — every database table enforces RLS. Users can only access their own sessions, credentials, and data.
-- **Credential encryption** — AWS/GCP keys and user-provided Anthropic API keys are stored via Supabase Vault (encrypted at rest). Decrypted only server-side at the moment of use.
+- **Credential encryption** — AWS/GCP keys and user-provided LLM API keys (OpenRouter, Anthropic) are stored via Supabase Vault (encrypted at rest). Decrypted only server-side at the moment of use.
 - **Input sanitization** — Mermaid diagrams rendered with `securityLevel: 'strict'`. YAML parsed in safe mode. LLM output treated as untrusted.
 - **Server-side validation** — all API routes verify authentication and validate input. Client data is never trusted.
 - **No secrets in the browser** — only `NEXT_PUBLIC_*` env vars reach the client. Service keys, database URLs, and credentials are server-only.

@@ -107,18 +107,20 @@ There is no incremental code patching. Code is always fully regenerated.
 | Scenario | SDK used | Key source |
 |---|---|---|
 | Free models (default) | `openai` package → OpenRouter API | `OPENROUTER_API_KEY` env var |
+| User brings OpenRouter key | `openai` package → OpenRouter API | User's key stored in Supabase Vault |
 | User brings Anthropic key | `@anthropic-ai/sdk` | User's key stored in Supabase Vault |
 
 **Free models available out of the box:** Gemini 2.0 Flash, Llama 3.3 70B, GPT-4o mini.
 
-**Premium models (BYOK):** Claude Sonnet, Claude Opus.
+**BYOK (Bring Your Own Key):** Users can add their own OpenRouter key (unlocks all OpenRouter models) or Anthropic key (unlocks Claude Sonnet, Claude Opus) in Settings > API Keys.
 
 ### Database
 
-Two main tables (see `prisma/schema.prisma`):
+Three main tables (see `prisma/schema.prisma`):
 
 - **sessions** — Mermaid code, Config YAML, generated Terraform, status, model choice
 - **credential_profiles** — cloud provider credentials (encrypted via Supabase Vault)
+- **user_api_keys** — LLM API keys (OpenRouter, Anthropic) encrypted via Supabase Vault
 
 User accounts are managed by Supabase Auth (not in Prisma).
 
@@ -148,9 +150,12 @@ conjure/
 │   │   │   ├── new/                   # Session setup
 │   │   │   └── [id]/                  # Main session view (chat + diagram)
 │   │   └── settings/
+│   │       ├── layout.tsx             # Settings sub-navigation
+│   │       ├── api-keys/             # LLM API key management (implemented)
 │   │       ├── credentials/           # Cloud credential management
 │   │       └── github/                # GitHub OAuth connection
 │   └── api/
+│       ├── api-keys/                  # LLM API key CRUD (implemented)
 │       ├── sessions/                  # Session CRUD
 │       ├── classify/                  # Prompt → topology / config / question
 │       ├── generate/
@@ -161,6 +166,8 @@ conjure/
 │       │   └── apply/                 # terraform apply
 │       └── credentials/               # Credential profile management
 ├── components/
+│   ├── auth/                          # Auth components (OAuthButtons, SignOutButton)
+│   ├── settings/                      # Settings components (ApiKeyCard)
 │   ├── session/
 │   │   ├── ChatPanel/                 # Chat messages + input
 │   │   ├── DiagramPanel/              # Mermaid diagram rendering
@@ -169,16 +176,19 @@ conjure/
 │   │   └── DeployPanel/               # Deploy config + plan/apply
 │   └── ui/                            # Shared primitives
 ├── lib/
+│   ├── prisma.ts                      # Prisma client singleton
 │   ├── llm/
 │   │   └── prompts/                   # Versioned prompt templates
 │   ├── supabase/
 │   │   ├── client.ts                  # Browser Supabase client
-│   │   └── server.ts                  # Server Supabase client
+│   │   ├── server.ts                  # Server Supabase client
+│   │   └── middleware.ts              # Auth middleware helper
 │   ├── config/                        # YAML parsing, validation, node ID sync
 │   ├── mermaid/                       # Mermaid validation helpers
 │   ├── icons/                         # SVG icon registry for diagram nodes
 │   ├── terraform/                     # Plan/apply execution, HCL validation
-│   └── vault/                         # Supabase Vault helpers
+│   └── vault/
+│       └── api-keys.ts               # LLM API key Vault helpers (implemented)
 ├── terraform-templates/               # Base Terraform templates
 │   ├── aws/
 │   └── gcp/
