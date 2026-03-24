@@ -40,7 +40,7 @@ export default function AuthLayout({
       {/* Right panel — auth form */}
       <div className="flex w-full shrink-0 flex-col bg-[var(--surface)] lg:w-[400px] lg:justify-center">
         {/* Mobile header — dark strip matching desktop branding */}
-        <div className="relative overflow-hidden bg-[var(--text)] px-9 pb-8 pt-12 text-white lg:hidden">
+        <div className="relative overflow-hidden bg-[var(--text)] px-7 pb-7 pt-10 text-white sm:px-9 lg:hidden">
           <div
             className="pointer-events-none absolute inset-0"
             style={{
@@ -53,7 +53,7 @@ export default function AuthLayout({
             <p className="mt-1 text-sm text-white/50">Prompt-to-Infrastructure</p>
           </div>
         </div>
-        <div className="px-9 pb-10 lg:py-10">
+        <div className="px-7 pb-10 pt-8 sm:px-9 lg:py-10">
           <div className="w-full max-w-[328px] lg:mx-auto">{children}</div>
         </div>
       </div>
