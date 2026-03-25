@@ -1,4 +1,4 @@
-# <img src="docs/conjure-icon-512.png" alt="Conjure logo" width="32" /> Conjure
+<h1><img src="docs/conjure-icon-512.png" alt="Conjure logo" width="32" valign="middle" />&nbsp;Conjure</h1>
 
 > Describe your infrastructure. We generate the diagram, the code, and provision it.
 
