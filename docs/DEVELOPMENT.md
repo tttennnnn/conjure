@@ -164,11 +164,17 @@ conjure/
 ├── app/                               # Next.js App Router
 │   ├── layout.tsx                     # Root layout
 │   ├── page.tsx                       # Landing page
+│   ├── not-found.tsx                  # Global 404 page
 │   ├── globals.css                    # Tailwind + global styles
-│   ├── (auth)/                        # Auth pages (login, register, forgot/reset password)
-│   │   └── layout.tsx                 # Split-screen layout (brand left, form right)
+│   ├── (auth)/                        # Auth pages
+│   │   ├── layout.tsx                 # Split-screen layout (branding left, form right)
+│   │   ├── login/page.tsx             # Login (implemented)
+│   │   ├── register/page.tsx          # Register (implemented)
+│   │   ├── forgot-password/page.tsx   # Forgot password (implemented)
+│   │   └── reset-password/page.tsx    # Reset password (implemented)
 │   ├── (app)/                         # Authenticated pages
 │   │   ├── layout.tsx                 # Sidebar shell
+│   │   ├── home/page.tsx              # Home / dashboard (implemented)
 │   │   ├── session/
 │   │   │   ├── new/page.tsx           # Session setup (implemented)
 │   │   │   └── [id]/page.tsx          # Main session view (implemented)
@@ -179,9 +185,13 @@ conjure/
 │   │       └── github/                # GitHub OAuth connection
 │   └── api/
 │       ├── api-keys/                  # LLM API key CRUD (implemented)
+│       ├── auth/
+│       │   ├── callback/              # OAuth callback handler (implemented)
+│       │   └── github/                # GitHub OAuth initiation (implemented)
 │       ├── chat/                      # Streaming chat with LLM (implemented)
 │       ├── models/                    # Available model list (implemented)
-│       ├── sessions/                  # Session list + detail (implemented)
+│       ├── sessions/                  # Session list (implemented)
+│       │   └── [id]/                  # Session detail (implemented)
 │       ├── classify/                  # Prompt → topology / config / question
 │       ├── generate/
 │       │   ├── diagram/               # Call 1: prompt → Mermaid + Config
@@ -191,7 +201,7 @@ conjure/
 │       │   └── apply/                 # terraform apply
 │       └── credentials/               # Credential profile management
 ├── components/
-│   ├── auth/                          # Auth components (OAuthButtons, SignOutButton)
+│   ├── auth/                          # Auth components (AuthBrandingPanel, OAuthButtons, SignOutButton)
 │   ├── settings/                      # Settings components (ApiKeyCard)
 │   ├── sidebar/                       # Sidebar with session list (implemented)
 │   ├── session/
