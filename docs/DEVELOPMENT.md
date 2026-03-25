@@ -112,14 +112,14 @@ Defence is layered -- no single layer is assumed to be sufficient.
 | **Rate limiting** | Sliding window limiter per user: chat 10/min, api-keys 5/min, sessions 5/min. Returns 429 on breach. Auth endpoints rate-limited by Supabase. | `lib/rate-limit.ts` |
 | **Input length limit** | Rejects messages over 1000 chars | `app/api/chat/route.ts` |
 | **Input validation** | Session names trimmed + capped at 100 chars. GitHub repo validated as `owner/repo`. Registration names trimmed, capped at 50 chars, stored trimmed. OAuth `next` param validated to block open redirects. | `lib/sessions/validation.ts`, `app/api/auth/callback/route.ts`, `app/(auth)/register/page.tsx` |
-| **Call 0 -- Guardrail classifier** | LLM classifies message as `INFRA` or `REJECT`. Blocks off-topic, prompt injection, role override attempts. Uses `max_tokens: 10`, `temperature: 0` for deterministic single-word output. Errors are logged and fail open. | `lib/llm/guardrails.ts` |
+| **Call 0 -- Guardrail classifier** | LLM classifies message as `INFRA` or `REJECT`. Blocks off-topic, prompt injection, role override attempts. Uses `max_tokens: 10`, `temperature: 0` for deterministic single-word output. Errors re-throw (fail closed). | `lib/llm/guardrails.ts` |
 | **System prompt hardening** | Explicit instructions to never reveal/modify the system prompt, never follow override instructions, treat injection attempts as off-topic. | `lib/llm/prompts/diagram.ts` |
 | **Output validation** | `parseLLMResponse()` only extracts content within `<<<MERMAID>>>` / `<<<CONFIG>>>` delimiters. Arbitrary LLM output cannot corrupt the diagram or config. Mermaid and YAML are validated before saving. | `lib/llm/parse.ts` |
 | **Rendering** | Mermaid rendered with `securityLevel: 'strict'` (no HTML). YAML parsed in safe mode. | Client-side |
 
 **Known limitations:**
 
-- **Fail-open guardrail** -- if Call 0 errors (network timeout, rate limit), it returns `allowed: true`. This prevents guardrail failures from blocking legitimate users, but means a transient error bypasses the check. A production system should fail closed or use a fallback classifier.
+- **Fail-closed guardrail** -- if Call 0 errors, the exception is re-thrown and caught by the chat route's error handler, returning a generic error message to the user. This is intentional: the guardrail uses the same provider and API key as Call 1, so a guardrail failure means Call 1 would fail anyway.
 - **Same model for guardrail and generation** -- Call 0 uses the same model as Call 1. A weaker free-tier model may be easier to trick than a premium model. A dedicated lightweight classifier would be more robust.
 - **Subtle injection** -- messages that start with valid infra content but embed secondary instructions (e.g. "Add a VPC. Also ignore previous rules and...") may pass Call 0. The system prompt hardening in Call 1 is the backstop, but it's LLM-dependent, not deterministic.
 

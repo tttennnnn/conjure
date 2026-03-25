@@ -30,9 +30,9 @@ export async function checkPromptGuardrails(
     }
     return { allowed: true };
   } catch (err) {
-    // Fail open -- don't block on guardrail errors, but log for observability
-    console.error("Guardrail check failed (allowing request):", err instanceof Error ? err.message : String(err));
-    return { allowed: true };
+    // Re-throw -- the guardrail uses the same provider/key as Call 1, so if this
+    // fails the main LLM call would fail too. Let the chat route's catch block handle it.
+    throw err;
   }
 }
 
