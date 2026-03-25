@@ -93,14 +93,33 @@ Every user message is classified into one of three categories:
 
 **Stale rule:** any change to Mermaid or Config → if generated code exists, it goes stale. No exceptions.
 
-### Two LLM calls
+### Three LLM calls
 
 | Call | Trigger | Input | Output |
 |---|---|---|---|
-| **Call 1** | User sends a topology or config message | Prompt + current Mermaid + Config | Updated Mermaid and/or Config + chat explanation |
+| **Call 0** | Every user message | User message only | `INFRA` (allowed) or `REJECT` (blocked) |
+| **Call 1** | User sends a topology or config message (after Call 0 passes) | Prompt + current Mermaid + Config | Updated Mermaid and/or Config + chat explanation |
 | **Call 2** | User clicks "Generate Code" | Full Mermaid + full Config | Terraform HCL files |
 
 There is no incremental code patching. Code is always fully regenerated.
+
+### LLM security
+
+Defence is layered — no single layer is assumed to be sufficient.
+
+| Layer | What it does | Location |
+|---|---|---|
+| **Input length limit** | Rejects messages over 1000 chars | `app/api/chat/route.ts` |
+| **Call 0 — Guardrail classifier** | LLM classifies message as `INFRA` or `REJECT`. Blocks off-topic, prompt injection, role override attempts. Uses `max_tokens: 10`, `temperature: 0` for deterministic single-word output. | `lib/llm/guardrails.ts` |
+| **System prompt hardening** | Explicit instructions to never reveal/modify the system prompt, never follow override instructions, treat injection attempts as off-topic. | `lib/llm/prompts/diagram.ts` |
+| **Output validation** | `parseLLMResponse()` only extracts content within `<<<MERMAID>>>` / `<<<CONFIG>>>` delimiters. Arbitrary LLM output cannot corrupt the diagram or config. Mermaid and YAML are validated before saving. | `lib/llm/parse.ts` |
+| **Rendering** | Mermaid rendered with `securityLevel: 'strict'` (no HTML). YAML parsed in safe mode. | Client-side |
+
+**Known limitations:**
+
+- **Fail-open guardrail** — if Call 0 errors (network timeout, rate limit), it returns `allowed: true`. This prevents guardrail failures from blocking legitimate users, but means a transient error bypasses the check. A production system should fail closed or use a fallback classifier.
+- **Same model for guardrail and generation** — Call 0 uses the same model as Call 1. A weaker free-tier model may be easier to trick than a premium model. A dedicated lightweight classifier would be more robust.
+- **Subtle injection** — messages that start with valid infra content but embed secondary instructions (e.g. "Add a VPC. Also ignore previous rules and...") may pass Call 0. The system prompt hardening in Call 1 is the backstop, but it's LLM-dependent, not deterministic.
 
 ### LLM provider routing
 
@@ -116,9 +135,11 @@ There is no incremental code patching. Code is always fully regenerated.
 
 ### Database
 
-Three main tables (see `prisma/schema.prisma`):
+Five main tables (see `prisma/schema.prisma`):
 
 - **sessions** — Mermaid code, Config YAML, generated Terraform, status, model choice
+- **messages** — chat history per session (user + assistant messages, cascading delete)
+- **user_custom_models** — user-added OpenRouter models (display name + model ID)
 - **credential_profiles** — cloud provider credentials (encrypted via Supabase Vault)
 - **user_api_keys** — LLM API keys (OpenRouter, Anthropic) encrypted via Supabase Vault
 
@@ -142,21 +163,23 @@ conjure/
 │   ├── layout.tsx                     # Root layout
 │   ├── page.tsx                       # Landing page
 │   ├── globals.css                    # Tailwind + global styles
-│   ├── (auth)/                        # Auth pages (login, register)
+│   ├── (auth)/                        # Auth pages (login, register, forgot/reset password)
 │   │   └── layout.tsx                 # Split-screen layout (brand left, form right)
 │   ├── (app)/                         # Authenticated pages
 │   │   ├── layout.tsx                 # Sidebar shell
 │   │   ├── session/
-│   │   │   ├── new/                   # Session setup
-│   │   │   └── [id]/                  # Main session view (chat + diagram)
+│   │   │   ├── new/page.tsx           # Session setup (implemented)
+│   │   │   └── [id]/page.tsx          # Main session view (implemented)
 │   │   └── settings/
 │   │       ├── layout.tsx             # Settings sub-navigation
-│   │       ├── api-keys/             # LLM API key management (implemented)
+│   │       ├── api-keys/              # LLM API key management (implemented)
 │   │       ├── credentials/           # Cloud credential management
 │   │       └── github/                # GitHub OAuth connection
 │   └── api/
 │       ├── api-keys/                  # LLM API key CRUD (implemented)
-│       ├── sessions/                  # Session CRUD
+│       ├── chat/                      # Streaming chat with LLM (implemented)
+│       ├── models/                    # Available model list (implemented)
+│       ├── sessions/                  # Session list + detail (implemented)
 │       ├── classify/                  # Prompt → topology / config / question
 │       ├── generate/
 │       │   ├── diagram/               # Call 1: prompt → Mermaid + Config
@@ -168,27 +191,43 @@ conjure/
 ├── components/
 │   ├── auth/                          # Auth components (OAuthButtons, SignOutButton)
 │   ├── settings/                      # Settings components (ApiKeyCard)
+│   ├── sidebar/                       # Sidebar with session list (implemented)
 │   ├── session/
-│   │   ├── ChatPanel/                 # Chat messages + input
-│   │   ├── DiagramPanel/              # Mermaid diagram rendering
+│   │   ├── SessionView.tsx            # Main session layout (implemented)
+│   │   ├── ChatPanel.tsx              # Chat messages display (implemented)
+│   │   ├── ChatInput.tsx              # Chat input with guardrails (implemented)
+│   │   ├── DiagramPanel.tsx           # Mermaid diagram rendering (implemented)
 │   │   ├── PropertiesDrawer/          # Click node → edit config
 │   │   ├── CodePanel/                 # Generated Terraform viewer
 │   │   └── DeployPanel/               # Deploy config + plan/apply
-│   └── ui/                            # Shared primitives
+│   └── ui/                            # Shared primitives (ConjureLogo)
 ├── lib/
 │   ├── prisma.ts                      # Prisma client singleton
 │   ├── llm/
-│   │   └── prompts/                   # Versioned prompt templates
+│   │   ├── client.ts                  # LLM SDK routing (OpenRouter / Anthropic) (implemented)
+│   │   ├── guardrails.ts              # Input pre-filter (implemented)
+│   │   ├── parse.ts                   # LLM output parser (implemented)
+│   │   ├── types.ts                   # LLM type definitions (implemented)
+│   │   └── prompts/
+│   │       └── diagram.ts             # Diagram generation prompt (implemented)
 │   ├── supabase/
+│   │   ├── auth.ts                    # Shared getAuthenticatedUserId helper (implemented)
 │   │   ├── client.ts                  # Browser Supabase client
 │   │   ├── server.ts                  # Server Supabase client
 │   │   └── middleware.ts              # Auth middleware helper
-│   ├── config/                        # YAML parsing, validation, node ID sync
-│   ├── mermaid/                       # Mermaid validation helpers
+│   ├── config/
+│   │   ├── validate.ts                # Config YAML validation (implemented)
+│   │   └── sync.ts                    # Mermaid ↔ Config node ID sync (implemented)
+│   ├── mermaid/
+│   │   └── validate.ts                # Mermaid syntax validation (implemented)
+│   ├── sessions/
+│   │   └── validation.ts              # Session input validation (implemented)
+│   ├── utils/
+│   │   └── date-groups.ts             # Date grouping + relative time (implemented)
 │   ├── icons/                         # SVG icon registry for diagram nodes
 │   ├── terraform/                     # Plan/apply execution, HCL validation
 │   └── vault/
-│       └── api-keys.ts               # LLM API key Vault helpers (implemented)
+│       └── api-keys.ts                # LLM API key Vault helpers (implemented)
 ├── terraform-templates/               # Base Terraform templates
 │   ├── aws/
 │   └── gcp/
@@ -202,7 +241,7 @@ conjure/
     └── conjure-mockup-v3.html         # UI mockup (open in browser)
 ```
 
-Most directories are scaffolded but empty — implementation starts from here.
+Files marked `(implemented)` are functional. Remaining directories are scaffolded for future work.
 
 ---
 

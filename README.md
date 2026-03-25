@@ -70,30 +70,58 @@ graph TD
 
     subgraph Vercel["Next.js on Vercel"]
         FE["React Frontend\n(App Router)"]
-        API["API Routes"]
+
+        subgraph API["API Routes"]
+            Guardrails["LLM Call 0\nGuardrail classifier\n(INFRA / REJECT)"]
+            Call1["LLM Call 1\nprompt → Mermaid + YAML"]
+            Call2["LLM Call 2\nMermaid + YAML → HCL"]
+            Validate["Output\nValidation"]
+            Deploy["Plan / Apply"]
+        end
     end
 
-    subgraph LLM["LLM Providers"]
-        OR["OpenRouter\nFree models"]
-        Anthropic["Anthropic\nPremium models"]
+    subgraph LLM["LLM Provider (one per session)"]
+        OR["OpenRouter\n(free or BYOK)"]
+        Anthropic["Anthropic\n(BYOK)"]
     end
 
     subgraph SB["Supabase"]
-        DB[("Postgres")]
-        Auth["Auth"]
-        Vault["Vault"]
+        DB[("Postgres\n(sessions, messages)")]
+        Auth["Auth\n(JWT + RLS)"]
+        Vault["Vault\n(API keys + cloud creds)"]
     end
 
-    User --> FE
-    FE --> API
-    API -- "Call 1: prompt → Mermaid + YAML" --> OR & Anthropic
-    API -- "Call 2: Mermaid + YAML → HCL" --> OR & Anthropic
-    API -- "Prisma ORM" --> DB
-    API --> Auth
-    API -- "encrypt/decrypt keys" --> Vault
+    subgraph Cloud["Cloud Target"]
+        AWS["AWS"]
+        GCP["GCP"]
+    end
+
+    User -- "HTTPS" --> FE
+    FE -- "HttpOnly cookie" --> Auth
+    Auth -. "JWT verified\n+ RLS enforced" .-> API
+    Guardrails -- "INFRA ✓" --> Call1
+    Guardrails -. "REJECT ✗\n(off-topic / injection)" .-> FE
+    Guardrails --> OR & Anthropic
+    Call1 --> OR & Anthropic
+    Call2 --> OR & Anthropic
+    OR & Anthropic -- "untrusted output" --> Validate
+    FE -- "Generate Code btn" --> Call2
+    Deploy -- "Terraform CLI" --> AWS & GCP
+    Deploy -- "decrypt creds\n(server-side only)" --> Vault
+    API -- "Prisma ORM\n(RLS scoped)" --> DB
+    Call1 & Call2 -- "decrypt user key\n(server-side only)" --> Vault
+
+    style Auth fill:#fef3c7,stroke:#d97706
+    style Vault fill:#fef3c7,stroke:#d97706
+    style Guardrails fill:#fee2e2,stroke:#dc2626
+    style Validate fill:#fee2e2,stroke:#dc2626
 ```
 
-The frontend sends user messages to API routes, which orchestrate two LLM call types: **Call 1** generates/updates the Mermaid diagram and Config YAML; **Call 2** converts them to Terraform/OpenTofu HCL. Sessions, messages, and credentials are persisted in Supabase.
+**How it works:** Each user message triggers up to three LLM calls. **Call 0** (guardrail) classifies the input as infrastructure-related or off-topic — rejected messages never reach the main model, blocking prompt injection and misuse. **Call 1** takes the approved prompt plus the current Mermaid + Config YAML and generates updates with a chat explanation. **Call 2** is triggered separately by the "Generate Code" button, converting the full Mermaid + Config pair into Terraform/OpenTofu HCL. When the user is ready to deploy, the Plan/Apply route decrypts cloud credentials from Vault and runs Terraform against the target provider. All session data is persisted in Supabase Postgres with Row Level Security. Users start with free models via the app-provided OpenRouter key, and can bring their own OpenRouter or Anthropic key for premium models.
+
+**Security boundaries:** Auth and Vault (amber) are the trust boundaries. Input Guardrails and Output Validation (red) are the LLM security layer. The browser only holds an HttpOnly session cookie — no secrets reach the client. Every API request is authenticated via JWT and scoped by Supabase RLS so users can only access their own data. Credentials and API keys are encrypted at rest in Vault and decrypted server-side only at the moment of use.
+
+**LLM security:** User input passes through guardrails (length limits, prompt injection pre-filter) before reaching the LLM. All LLM output is treated as **untrusted** — Mermaid is validated and rendered with `securityLevel: 'strict'` (no embedded HTML), Config YAML is parsed in safe mode and validated against a schema, and generated HCL is syntax-checked before display. This prevents prompt injection, XSS via diagram output, and malformed infrastructure code.
 
 ---
 
