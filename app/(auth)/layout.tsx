@@ -23,7 +23,7 @@ export default function AuthLayout({
           </div>
           <p className="mt-4 text-base leading-relaxed text-white/60">
             Describe your infrastructure in plain English. Get a diagram,
-            Terraform code, and deploy — all from one conversation.
+            IaC code, and deploy — all from one conversation.
           </p>
           <div className="mt-8 space-y-4 text-sm text-white/50">
             <div className="flex items-start gap-3">
@@ -36,7 +36,7 @@ export default function AuthLayout({
             </div>
             <div className="flex items-start gap-3">
               <span className="mt-0.5 text-lg">🚀</span>
-              <span>Generate Terraform and deploy from the browser</span>
+              <span>Generate IaC and deploy from the browser</span>
             </div>
           </div>
         </div>

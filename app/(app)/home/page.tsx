@@ -9,7 +9,7 @@ export default function HomePage() {
       <h2 className="text-sm font-semibold">No session selected</h2>
       <p className="max-w-[300px] text-center text-xs leading-relaxed text-[var(--muted)]">
         Start a new session to describe your infrastructure and generate
-        architecture diagrams and Terraform code.
+        architecture diagrams and IaC code.
       </p>
       <Link
         href="/session/new"

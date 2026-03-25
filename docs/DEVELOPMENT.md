@@ -79,7 +79,7 @@ Infrastructure is defined by **two files that work as a pair**:
 
 Node IDs are the glue — every node ID in Mermaid must have a corresponding entry in the config. If one has an ID the other doesn't, that's a validation error.
 
-Terraform HCL is always a **derived output** generated from the Mermaid + Config pair. It is never edited directly or patched incrementally.
+IaC (Terraform/OpenTofu HCL) is always a **derived output** generated from the Mermaid + Config pair. It is never edited directly or patched incrementally.
 
 ### Message classification
 
@@ -99,7 +99,7 @@ Every user message is classified into one of three categories:
 |---|---|---|---|
 | **Call 0** | Every user message | User message only | `INFRA` (allowed) or `REJECT` (blocked) |
 | **Call 1** | User sends a topology or config message (after Call 0 passes) | Prompt + current Mermaid + Config | Updated Mermaid and/or Config + chat explanation |
-| **Call 2** | User clicks "Generate Code" | Full Mermaid + full Config | Terraform HCL files |
+| **Call 2** | User clicks "Generate Code" | Full Mermaid + full Config | IaC (HCL) files |
 
 There is no incremental code patching. Code is always fully regenerated.
 
@@ -137,7 +137,7 @@ Defence is layered — no single layer is assumed to be sufficient.
 
 Five main tables (see `prisma/schema.prisma`):
 
-- **sessions** — Mermaid code, Config YAML, generated Terraform, status, model choice
+- **sessions** — Mermaid code, Config YAML, generated IaC, status, model choice
 - **messages** — chat history per session (user + assistant messages, cascading delete)
 - **user_custom_models** — user-added OpenRouter models (display name + model ID)
 - **credential_profiles** — cloud provider credentials (encrypted via Supabase Vault)
@@ -183,7 +183,7 @@ conjure/
 │       ├── classify/                  # Prompt → topology / config / question
 │       ├── generate/
 │       │   ├── diagram/               # Call 1: prompt → Mermaid + Config
-│       │   └── code/                  # Call 2: Mermaid + Config → Terraform
+│       │   └── code/                  # Call 2: Mermaid + Config → IaC (HCL)
 │       ├── deploy/
 │       │   ├── plan/                  # terraform plan
 │       │   └── apply/                 # terraform apply
@@ -198,7 +198,7 @@ conjure/
 │   │   ├── ChatInput.tsx              # Chat input with guardrails (implemented)
 │   │   ├── DiagramPanel.tsx           # Mermaid diagram rendering (implemented)
 │   │   ├── PropertiesDrawer/          # Click node → edit config
-│   │   ├── CodePanel/                 # Generated Terraform viewer
+│   │   ├── CodePanel/                 # Generated IaC viewer
 │   │   └── DeployPanel/               # Deploy config + plan/apply
 │   └── ui/                            # Shared primitives (ConjureLogo)
 ├── lib/
@@ -228,7 +228,7 @@ conjure/
 │   ├── terraform/                     # Plan/apply execution, HCL validation
 │   └── vault/
 │       └── api-keys.ts                # LLM API key Vault helpers (implemented)
-├── terraform-templates/               # Base Terraform templates
+├── terraform-templates/               # Base IaC templates
 │   ├── aws/
 │   └── gcp/
 ├── tests/

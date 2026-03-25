@@ -106,7 +106,7 @@ graph TD
     Call2 --> OR & Anthropic
     OR & Anthropic -- "untrusted output" --> Validate
     FE -- "Generate Code btn" --> Call2
-    Deploy -- "Terraform CLI" --> AWS & GCP
+    Deploy -- "IaC CLI" --> AWS & GCP
     Deploy -- "decrypt creds\n(server-side only)" --> Vault
     API -- "Prisma ORM\n(RLS scoped)" --> DB
     Call1 & Call2 -- "decrypt user key\n(server-side only)" --> Vault
@@ -117,7 +117,7 @@ graph TD
     style Validate fill:#fee2e2,stroke:#dc2626
 ```
 
-**How it works:** Each user message triggers up to three LLM calls. **Call 0** (guardrail) classifies the input as infrastructure-related or off-topic — rejected messages never reach the main model, blocking prompt injection and misuse. **Call 1** takes the approved prompt plus the current Mermaid + Config YAML and generates updates with a chat explanation. **Call 2** is triggered separately by the "Generate Code" button, converting the full Mermaid + Config pair into Terraform/OpenTofu HCL. When the user is ready to deploy, the Plan/Apply route decrypts cloud credentials from Vault and runs Terraform against the target provider. All session data is persisted in Supabase Postgres with Row Level Security. Users start with free models via the app-provided OpenRouter key, and can bring their own OpenRouter or Anthropic key for premium models.
+**How it works:** Each user message triggers up to three LLM calls. **Call 0** (guardrail) classifies the input as infrastructure-related or off-topic — rejected messages never reach the main model, blocking prompt injection and misuse. **Call 1** takes the approved prompt plus the current Mermaid + Config YAML and generates updates with a chat explanation. **Call 2** is triggered separately by the "Generate Code" button, converting the full Mermaid + Config pair into Terraform/OpenTofu HCL. When the user is ready to deploy, the Plan/Apply route decrypts cloud credentials from Vault and runs the IaC tool against the target provider. All session data is persisted in Supabase Postgres with Row Level Security. Users start with free models via the app-provided OpenRouter key, and can bring their own OpenRouter or Anthropic key for premium models.
 
 **Security boundaries:** Auth and Vault (amber) are the trust boundaries. Input Guardrails and Output Validation (red) are the LLM security layer. The browser only holds an HttpOnly session cookie — no secrets reach the client. Every API request is authenticated via JWT and scoped by Supabase RLS so users can only access their own data. Credentials and API keys are encrypted at rest in Vault and decrypted server-side only at the moment of use.
 
