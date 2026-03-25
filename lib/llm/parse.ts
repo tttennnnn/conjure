@@ -155,7 +155,7 @@ export function parseLLMResponse(
     }
   }
 
-  // Both present — check sync
+  // Both present -- check sync
   if (hasMermaid && hasConfig) {
     if (!mermaidValid || !configValid) {
       warnings.push("Diagram update discarded due to validation errors.");
@@ -172,7 +172,7 @@ export function parseLLMResponse(
     configYaml = blocks.configYaml;
   }
 
-  // Config only — validate against existing Mermaid
+  // Config only -- validate against existing Mermaid
   if (!hasMermaid && hasConfig) {
     if (!configValid) {
       return { chatText: blocks.chatText, mermaid: null, configYaml: null, validationWarnings: warnings };
@@ -186,7 +186,7 @@ export function parseLLMResponse(
     configYaml = blocks.configYaml;
   }
 
-  // Mermaid only — topology change should produce both, but allow if IDs match existing config
+  // Mermaid only -- topology change should produce both, but allow if IDs match existing config
   if (hasMermaid && !hasConfig) {
     if (!mermaidValid) {
       return { chatText: blocks.chatText, mermaid: null, configYaml: null, validationWarnings: warnings };

@@ -8,8 +8,8 @@ Everything you need to set up, understand, and contribute to Conjure.
 
 ### Prerequisites
 
-- **Docker** — runs the dev server in a Node 20 Linux container
-- **Node.js 20+** — local install for IDE autocomplete only (the app runs in Docker)
+- **Docker** -- runs the dev server in a Node 20 Linux container
+- **Node.js 20+** -- local install for IDE autocomplete only (the app runs in Docker)
 
 ### 1. Install dependencies
 
@@ -17,7 +17,7 @@ Everything you need to set up, understand, and contribute to Conjure.
 npm install
 ```
 
-This creates a local `node_modules` so your editor can resolve types. Docker maintains its own `node_modules` inside the container — the two are independent.
+This creates a local `node_modules` so your editor can resolve types. Docker maintains its own `node_modules` inside the container -- the two are independent.
 
 ### 2. Environment variables
 
@@ -64,7 +64,7 @@ npm install <package>          # local (for IDE)
 docker compose up --build      # rebuild container
 ```
 
-Both steps needed — local for autocomplete, rebuild so the container picks it up.
+Both steps needed -- local for autocomplete, rebuild so the container picks it up.
 
 ---
 
@@ -74,10 +74,10 @@ Both steps needed — local for autocomplete, rebuild so the container picks it 
 
 Infrastructure is defined by **two files that work as a pair**:
 
-- **Mermaid** — topology only (what nodes exist and how they connect)
-- **Config YAML** — everything else (resource types, instance sizes, networking, ports)
+- **Mermaid** -- topology only (what nodes exist and how they connect)
+- **Config YAML** -- everything else (resource types, instance sizes, networking, ports)
 
-Node IDs are the glue — every node ID in Mermaid must have a corresponding entry in the config. If one has an ID the other doesn't, that's a validation error.
+Node IDs are the glue -- every node ID in Mermaid must have a corresponding entry in the config. If one has an ID the other doesn't, that's a validation error.
 
 IaC (Terraform/OpenTofu HCL) is always a **derived output** generated from the Mermaid + Config pair. It is never edited directly or patched incrementally.
 
@@ -105,21 +105,21 @@ There is no incremental code patching. Code is always fully regenerated.
 
 ### LLM security
 
-Defence is layered — no single layer is assumed to be sufficient.
+Defence is layered -- no single layer is assumed to be sufficient.
 
 | Layer | What it does | Location |
 |---|---|---|
 | **Input length limit** | Rejects messages over 1000 chars | `app/api/chat/route.ts` |
-| **Call 0 — Guardrail classifier** | LLM classifies message as `INFRA` or `REJECT`. Blocks off-topic, prompt injection, role override attempts. Uses `max_tokens: 10`, `temperature: 0` for deterministic single-word output. | `lib/llm/guardrails.ts` |
+| **Call 0 -- Guardrail classifier** | LLM classifies message as `INFRA` or `REJECT`. Blocks off-topic, prompt injection, role override attempts. Uses `max_tokens: 10`, `temperature: 0` for deterministic single-word output. | `lib/llm/guardrails.ts` |
 | **System prompt hardening** | Explicit instructions to never reveal/modify the system prompt, never follow override instructions, treat injection attempts as off-topic. | `lib/llm/prompts/diagram.ts` |
 | **Output validation** | `parseLLMResponse()` only extracts content within `<<<MERMAID>>>` / `<<<CONFIG>>>` delimiters. Arbitrary LLM output cannot corrupt the diagram or config. Mermaid and YAML are validated before saving. | `lib/llm/parse.ts` |
 | **Rendering** | Mermaid rendered with `securityLevel: 'strict'` (no HTML). YAML parsed in safe mode. | Client-side |
 
 **Known limitations:**
 
-- **Fail-open guardrail** — if Call 0 errors (network timeout, rate limit), it returns `allowed: true`. This prevents guardrail failures from blocking legitimate users, but means a transient error bypasses the check. A production system should fail closed or use a fallback classifier.
-- **Same model for guardrail and generation** — Call 0 uses the same model as Call 1. A weaker free-tier model may be easier to trick than a premium model. A dedicated lightweight classifier would be more robust.
-- **Subtle injection** — messages that start with valid infra content but embed secondary instructions (e.g. "Add a VPC. Also ignore previous rules and...") may pass Call 0. The system prompt hardening in Call 1 is the backstop, but it's LLM-dependent, not deterministic.
+- **Fail-open guardrail** -- if Call 0 errors (network timeout, rate limit), it returns `allowed: true`. This prevents guardrail failures from blocking legitimate users, but means a transient error bypasses the check. A production system should fail closed or use a fallback classifier.
+- **Same model for guardrail and generation** -- Call 0 uses the same model as Call 1. A weaker free-tier model may be easier to trick than a premium model. A dedicated lightweight classifier would be more robust.
+- **Subtle injection** -- messages that start with valid infra content but embed secondary instructions (e.g. "Add a VPC. Also ignore previous rules and...") may pass Call 0. The system prompt hardening in Call 1 is the backstop, but it's LLM-dependent, not deterministic.
 
 ### LLM provider routing
 
@@ -137,11 +137,11 @@ Defence is layered — no single layer is assumed to be sufficient.
 
 Five main tables (see `prisma/schema.prisma`):
 
-- **sessions** — Mermaid code, Config YAML, generated IaC, status, model choice
-- **messages** — chat history per session (user + assistant messages, cascading delete)
-- **user_custom_models** — user-added OpenRouter models (display name + model ID)
-- **credential_profiles** — cloud provider credentials (encrypted via Supabase Vault)
-- **user_api_keys** — LLM API keys (OpenRouter, Anthropic) encrypted via Supabase Vault
+- **sessions** -- Mermaid code, Config YAML, generated IaC, status, model choice
+- **messages** -- chat history per session (user + assistant messages, cascading delete)
+- **user_custom_models** -- user-added OpenRouter models (display name + model ID)
+- **credential_profiles** -- cloud provider credentials (encrypted via Supabase Vault)
+- **user_api_keys** -- LLM API keys (OpenRouter, Anthropic) encrypted via Supabase Vault
 
 User accounts are managed by Supabase Auth (not in Prisma).
 
@@ -284,9 +284,9 @@ The mockup defines **layout and structure**. Aesthetics may be refined per-scree
 
 ### TypeScript
 
-- **Strict mode** — `strict: true` + `noUncheckedIndexedAccess: true`
+- **Strict mode** -- `strict: true` + `noUncheckedIndexedAccess: true`
 - No `any`, no `as unknown as`, no suppressed errors
-- Server components by default — use `'use client'` only when needed (event handlers, browser APIs, Mermaid rendering)
+- Server components by default -- use `'use client'` only when needed (event handlers, browser APIs, Mermaid rendering)
 
 ### Naming
 
@@ -310,7 +310,7 @@ The mockup defines **layout and structure**. Aesthetics may be refined per-scree
 ### Git
 
 - Feature branches → PR to `main`
-- Concise commit messages — one short line
+- Concise commit messages -- one short line
 - Good: `add credential selector to deploy tab`
 - Bad: multi-paragraph messages, `Co-authored-by` lines
 

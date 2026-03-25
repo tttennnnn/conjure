@@ -83,7 +83,7 @@ export default function Sidebar({ displayName, initials }: SidebarProps) {
         setSessions(await res.json());
       }
     } catch {
-      // Silently fail — sidebar still works
+      // Silently fail -- sidebar still works
     }
   }, []);
 

@@ -7,7 +7,7 @@ export default function AuthLayout({
 }>) {
   return (
     <div className="flex min-h-full">
-      {/* Left panel — branding (desktop only) */}
+      {/* Left panel -- branding (desktop only) */}
       <div className="relative hidden flex-1 flex-col items-center justify-center overflow-hidden bg-[var(--text)] px-12 py-12 text-white lg:flex">
         <div
           className="pointer-events-none absolute inset-0"
@@ -23,12 +23,12 @@ export default function AuthLayout({
           </div>
           <p className="mt-4 text-base leading-relaxed text-white/60">
             Describe your infrastructure in plain English. Get a diagram,
-            IaC code, and deploy — all from one conversation.
+            IaC code, and deploy -- all from one conversation.
           </p>
           <div className="mt-8 space-y-4 text-sm text-white/50">
             <div className="flex items-start gap-3">
               <span className="mt-0.5 text-lg">💬</span>
-              <span>Chat naturally — the AI builds your architecture as you talk</span>
+              <span>Chat naturally -- the AI builds your architecture as you talk</span>
             </div>
             <div className="flex items-start gap-3">
               <span className="mt-0.5 text-lg">📐</span>
@@ -42,9 +42,9 @@ export default function AuthLayout({
         </div>
       </div>
 
-      {/* Right panel — auth form */}
+      {/* Right panel -- auth form */}
       <div className="flex w-full shrink-0 flex-col bg-[var(--surface)] lg:w-[440px] lg:justify-center xl:w-[480px]">
-        {/* Mobile header — dark strip matching desktop branding */}
+        {/* Mobile header -- dark strip matching desktop branding */}
         <div className="relative overflow-hidden bg-[var(--text)] px-7 pb-7 pt-10 text-white sm:px-9 lg:hidden">
           <div
             className="pointer-events-none absolute inset-0"

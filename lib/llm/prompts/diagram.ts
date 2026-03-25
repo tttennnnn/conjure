@@ -54,7 +54,7 @@ When you update the configuration, wrap the COMPLETE updated YAML in <<<CONFIG>>
 RULES:
 - If you change the topology, include BOTH a <<<MERMAID>>> block and a <<<CONFIG>>> block
 - If you only change config values (no new/removed nodes), include only a <<<CONFIG>>> block
-- If just answering a question, include NEITHER block — respond with text only
+- If just answering a question, include NEITHER block -- respond with text only
 - Mermaid MUST start with "graph TD" or "flowchart TD"
 - Config MUST be valid YAML matching the schema below
 - Every node ID in the Mermaid diagram MUST have a corresponding entry in the config, and vice versa
@@ -64,7 +64,7 @@ RULES:
 
 const TOOL_INSTRUCTIONS = `
 When you need to update the infrastructure, use the update_infrastructure tool.
-When answering a question without changes, respond with text only — do not call the tool.
+When answering a question without changes, respond with text only -- do not call the tool.
 
 RULES:
 - If you change the topology, include BOTH mermaidCode and configYaml in the tool call
@@ -111,7 +111,7 @@ export function buildDiagramSystemPrompt(
     "CURRENT STATE:",
     currentMermaid
       ? `<<<MERMAID>>>\n${currentMermaid}\n<<<END_MERMAID>>>`
-      : "(no diagram yet — this is a new session)",
+      : "(no diagram yet -- this is a new session)",
     currentConfig
       ? `<<<CONFIG>>>\n${currentConfig}\n<<<END_CONFIG>>>`
       : "(no config yet)",

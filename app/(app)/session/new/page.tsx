@@ -157,7 +157,7 @@ export default function NewSessionPage() {
             </button>
           </div>
           <div className="text-[10px] text-[var(--muted)]">
-            Optional — you can also export code without GitHub.
+            Optional -- you can also export code without GitHub.
           </div>
         </section>
 

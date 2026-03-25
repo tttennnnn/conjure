@@ -19,7 +19,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "Conjure",
-  description: "Prompt-to-Infrastructure — describe your cloud, we generate the code",
+  description: "Prompt-to-Infrastructure -- describe your cloud, we generate the code",
 };
 
 export default function RootLayout({
