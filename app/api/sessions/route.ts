@@ -6,13 +6,23 @@ import {
   isValidTargetEnv,
   isValidIacTool,
   isValidModel,
+  sanitizeSessionName,
+  isValidGithubRepo,
 } from "@/lib/sessions/validation";
+import { createRateLimiter } from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
+
+const sessionsLimiter = createRateLimiter("sessions", { maxRequests: 5, windowMs: 60_000 });
 
 export async function POST(request: Request) {
   const userId = await getAuthenticatedUserId();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const limit = sessionsLimiter(userId);
+  if (!limit.success) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
   let body: {
@@ -33,6 +43,14 @@ export async function POST(request: Request) {
   if (!name || !targetEnv || !iacTool || !model) {
     return NextResponse.json(
       { error: "name, targetEnv, iacTool, and model are required" },
+      { status: 400 },
+    );
+  }
+
+  const sanitizedName = sanitizeSessionName(name);
+  if (!sanitizedName) {
+    return NextResponse.json(
+      { error: "Session name must be 1-100 characters" },
       { status: 400 },
     );
   }
@@ -58,11 +76,18 @@ export async function POST(request: Request) {
     );
   }
 
+  if (githubRepo && !isValidGithubRepo(githubRepo)) {
+    return NextResponse.json(
+      { error: 'githubRepo must be in "owner/repo" format' },
+      { status: 400 },
+    );
+  }
+
   try {
     const session = await getPrisma().session.create({
       data: {
         userId,
-        name,
+        name: sanitizedName,
         targetEnv,
         iacTool,
         model,

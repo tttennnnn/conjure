@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { useState } from "react";
 
+const MAX_NAME_LENGTH = 50;
+
 export default function RegisterPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -22,6 +24,18 @@ export default function RegisterPage() {
       setError("Please fill in all fields.");
       return;
     }
+
+    const trimmedFirst = firstName.trim();
+    const trimmedLast = lastName.trim();
+
+    if (!trimmedFirst || !trimmedLast) {
+      setError("Please fill in all fields.");
+      return;
+    }
+    if (trimmedFirst.length > MAX_NAME_LENGTH || trimmedLast.length > MAX_NAME_LENGTH) {
+      setError(`Name must be ${MAX_NAME_LENGTH} characters or less.`);
+      return;
+    }
     if (password.length < 8) {
       setError("Password must be at least 8 characters.");
       return;
@@ -35,8 +49,8 @@ export default function RegisterPage() {
       password,
       options: {
         data: {
-          first_name: firstName,
-          last_name: lastName,
+          first_name: trimmedFirst,
+          last_name: trimmedLast,
         },
         emailRedirectTo: `${window.location.origin}/api/auth/callback`,
       },
@@ -104,6 +118,7 @@ export default function RegisterPage() {
               id="firstName"
               type="text"
               required
+              maxLength={MAX_NAME_LENGTH}
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               placeholder="John"
@@ -118,6 +133,7 @@ export default function RegisterPage() {
               id="lastName"
               type="text"
               required
+              maxLength={MAX_NAME_LENGTH}
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               placeholder="Doe"

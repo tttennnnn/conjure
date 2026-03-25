@@ -86,6 +86,20 @@ export function isValidModel(id: string): boolean {
   return MODELS.some((m) => m.id === id);
 }
 
+const MAX_SESSION_NAME_LENGTH = 100;
+
+export function sanitizeSessionName(name: string): string | null {
+  const trimmed = name.trim();
+  if (trimmed.length === 0 || trimmed.length > MAX_SESSION_NAME_LENGTH) return null;
+  return trimmed;
+}
+
+const GITHUB_REPO_PATTERN = /^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/;
+
+export function isValidGithubRepo(repo: string): boolean {
+  return repo.length <= 200 && GITHUB_REPO_PATTERN.test(repo);
+}
+
 /** Returns true if the model ID is not in the built-in list (i.e. a custom OpenRouter model). */
 export function isCustomOpenRouterModel(id: string): boolean {
   return !MODELS.some((m) => m.id === id);
@@ -108,6 +122,6 @@ export function resolveModelId(sessionModel: string): {
     if (!modelId) return null;
     return { modelId, provider: builtIn.provider };
   }
-  // Custom model — always OpenRouter
+  // Custom model -- always OpenRouter
   return { modelId: sessionModel, provider: "openrouter" };
 }

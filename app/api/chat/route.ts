@@ -8,8 +8,11 @@ import { callLLM } from "@/lib/llm/client";
 import { parseLLMResponse } from "@/lib/llm/parse";
 import { checkPromptGuardrails } from "@/lib/llm/guardrails";
 import { buildDiagramSystemPrompt } from "@/lib/llm/prompts/diagram";
+import { createRateLimiter } from "@/lib/rate-limit";
 import type { ConversationMessage } from "@/lib/llm/types";
 import { NextResponse } from "next/server";
+
+const chatLimiter = createRateLimiter("chat", { maxRequests: 10, windowMs: 60_000 });
 
 const MAX_HISTORY_MESSAGES = 20;
 const LLM_ERROR_RESPONSE = "Sorry, I encountered an error processing your request. Please try again.";
@@ -19,6 +22,11 @@ export async function POST(request: Request) {
   const userId = await getAuthenticatedUserId();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const limit = chatLimiter(userId);
+  if (!limit.success) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
   let body: { sessionId?: string; message?: string };
@@ -58,7 +66,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Session not found" }, { status: 404 });
   }
 
-  // Fetched newest N messages desc — reverse to chronological for LLM context
+  // Fetched newest N messages desc -- reverse to chronological for LLM context
   session.messages.reverse();
 
   // Resolve model → provider-specific ID

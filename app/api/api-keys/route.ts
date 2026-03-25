@@ -10,7 +10,10 @@ import {
   storeApiKey,
   validateKeyFormat,
 } from "@/lib/vault/api-keys";
+import { createRateLimiter } from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
+
+const apiKeysLimiter = createRateLimiter("api-keys", { maxRequests: 5, windowMs: 60_000 });
 
 export async function GET() {
   const userId = await getAuthenticatedUserId();
@@ -39,6 +42,11 @@ export async function POST(request: Request) {
   const userId = await getAuthenticatedUserId();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const limit = apiKeysLimiter(userId);
+  if (!limit.success) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
   let body: { provider?: string; key?: string };
@@ -89,6 +97,11 @@ export async function DELETE(request: Request) {
   const userId = await getAuthenticatedUserId();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const limit = apiKeysLimiter(userId);
+  if (!limit.success) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
   const { searchParams } = new URL(request.url);

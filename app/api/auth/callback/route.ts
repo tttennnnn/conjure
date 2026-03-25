@@ -1,6 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
+function isValidRedirectPath(path: string): boolean {
+  return path.startsWith("/") && !path.startsWith("//") && !path.includes("\\");
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
@@ -11,7 +15,7 @@ export async function GET(request: Request) {
 
     if (!error) {
       const next = searchParams.get("next");
-      if (next) {
+      if (next && isValidRedirectPath(next)) {
         return NextResponse.redirect(`${origin}${next}`);
       }
       // Email verification: sign out so user must log in manually
@@ -20,6 +24,6 @@ export async function GET(request: Request) {
     }
   }
 
-  // Auth failed — redirect to login with error
+  // Auth failed -- redirect to login with error
   return NextResponse.redirect(`${origin}/login?error=auth_failed`);
 }

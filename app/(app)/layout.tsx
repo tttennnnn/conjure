@@ -22,10 +22,10 @@ export default async function AppLayout({
     redirect("/login");
   }
 
-  const displayName =
-    user.user_metadata?.first_name
-      ? `${user.user_metadata.first_name} ${user.user_metadata.last_name ?? ""}`.trim()
-      : user.email ?? "User";
+  const rawName = user.user_metadata?.first_name
+    ? `${user.user_metadata.first_name} ${user.user_metadata.last_name ?? ""}`.trim()
+    : "";
+  const displayName = (rawName ? rawName.slice(0, 100) : user.email) ?? "User";
 
   const initials = getInitials(displayName);
 
