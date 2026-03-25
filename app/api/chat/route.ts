@@ -16,6 +16,16 @@ const chatLimiter = createRateLimiter("chat", { maxRequests: 10, windowMs: 60_00
 
 const MAX_HISTORY_MESSAGES = 20;
 const LLM_ERROR_RESPONSE = "Sorry, I encountered an error processing your request. Please try again.";
+const LLM_AUTH_ERROR_RESPONSE = "Your API key is invalid or has been revoked. Please update it in Settings > API Keys.";
+
+function isAuthError(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "status" in err &&
+    (err as { status: number }).status === 401
+  );
+}
 const MAX_MESSAGE_LENGTH = 1000;
 
 export async function POST(request: Request) {
@@ -109,8 +119,9 @@ export async function POST(request: Request) {
   });
 
   // Build conversation history, filtering out error messages
+  const ERROR_MESSAGES = new Set([LLM_ERROR_RESPONSE, LLM_AUTH_ERROR_RESPONSE]);
   const history: ConversationMessage[] = session.messages
-    .filter((m) => m.content !== LLM_ERROR_RESPONSE)
+    .filter((m) => !ERROR_MESSAGES.has(m.content))
     .map((m) => ({
       role: m.role as "user" | "assistant",
       content: m.content,
@@ -221,12 +232,14 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("LLM call failed:", err);
 
+    const errorContent = isAuthError(err) ? LLM_AUTH_ERROR_RESPONSE : LLM_ERROR_RESPONSE;
+
     // Save an error message so the user sees feedback
     const errorMessage = await getPrisma().message.create({
       data: {
         sessionId,
         role: "assistant",
-        content: LLM_ERROR_RESPONSE,
+        content: errorContent,
       },
     });
 
