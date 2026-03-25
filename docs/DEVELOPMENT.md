@@ -131,7 +131,7 @@ Defence is layered — no single layer is assumed to be sufficient.
 
 **Free models available out of the box:** Gemini 2.0 Flash, Llama 3.3 70B, GPT-4o mini.
 
-**BYOK (Bring Your Own Key):** Users can add their own OpenRouter key (unlocks all OpenRouter models) or Anthropic key (unlocks Claude Sonnet, Claude Opus) in Settings > API Keys.
+**BYOK (Bring Your Own Key):** Users can add their own OpenRouter key (unlocks all OpenRouter models) or Anthropic key (unlocks Claude Haiku, Sonnet, Opus) in Settings > API Keys.
 
 ### Database
 

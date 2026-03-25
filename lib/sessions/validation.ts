@@ -36,18 +36,25 @@ const MODELS: ModelOption[] = [
     openRouterId: "openai/gpt-4o-mini",
   },
   {
-    id: "claude-sonnet",
-    name: "Claude Sonnet",
+    id: "claude-haiku",
+    name: "Claude Haiku 4.5",
     provider: "anthropic",
     tier: "premium",
-    anthropicId: "claude-sonnet-4-20250514",
+    anthropicId: "claude-haiku-4-5-20251001",
+  },
+  {
+    id: "claude-sonnet",
+    name: "Claude Sonnet 4.6",
+    provider: "anthropic",
+    tier: "premium",
+    anthropicId: "claude-sonnet-4-6-20250725",
   },
   {
     id: "claude-opus",
-    name: "Claude Opus",
+    name: "Claude Opus 4.6",
     provider: "anthropic",
     tier: "premium",
-    anthropicId: "claude-opus-4-0-20250514",
+    anthropicId: "claude-opus-4-6-20250501",
   },
 ];
 

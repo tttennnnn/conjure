@@ -22,6 +22,8 @@ function modelTag(m: ModelOption): { label: string; className: string } | null {
     return { label: "Fast", className: "bg-[var(--success-bg)] text-[var(--success-text)]" };
   if (m.id === "llama-3.3-70b")
     return { label: "Free", className: "bg-[var(--success-bg)] text-[var(--success-text)]" };
+  if (m.id === "claude-haiku")
+    return { label: "Fast", className: "bg-[var(--success-bg)] text-[var(--success-text)]" };
   if (m.id === "claude-sonnet")
     return { label: "Recommended", className: "bg-[var(--info-bg)] text-[var(--info-text)]" };
   if (m.id === "claude-opus")

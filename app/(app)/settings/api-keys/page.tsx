@@ -93,7 +93,7 @@ export default function ApiKeysPage() {
       <ApiKeyCard
         provider="anthropic"
         label="Anthropic"
-        description="Provide your key to unlock Claude Sonnet and Claude Opus"
+        description="Provide your key to unlock Claude Haiku, Sonnet, and Opus"
         keyHint={getKeyHint("anthropic")}
         onSave={(key) => handleSave("anthropic", key)}
         onRemove={() => handleRemove("anthropic")}
