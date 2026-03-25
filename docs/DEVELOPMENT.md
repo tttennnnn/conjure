@@ -109,8 +109,10 @@ Defence is layered -- no single layer is assumed to be sufficient.
 
 | Layer | What it does | Location |
 |---|---|---|
+| **Rate limiting** | Sliding window limiter per user: chat 10/min, api-keys 5/min, sessions 5/min. Returns 429 on breach. Auth endpoints rate-limited by Supabase. | `lib/rate-limit.ts` |
 | **Input length limit** | Rejects messages over 1000 chars | `app/api/chat/route.ts` |
-| **Call 0 -- Guardrail classifier** | LLM classifies message as `INFRA` or `REJECT`. Blocks off-topic, prompt injection, role override attempts. Uses `max_tokens: 10`, `temperature: 0` for deterministic single-word output. | `lib/llm/guardrails.ts` |
+| **Input validation** | Session names trimmed + capped at 100 chars. GitHub repo validated as `owner/repo`. Registration names trimmed, capped at 50 chars, stored trimmed. OAuth `next` param validated to block open redirects. | `lib/sessions/validation.ts`, `app/api/auth/callback/route.ts`, `app/(auth)/register/page.tsx` |
+| **Call 0 -- Guardrail classifier** | LLM classifies message as `INFRA` or `REJECT`. Blocks off-topic, prompt injection, role override attempts. Uses `max_tokens: 10`, `temperature: 0` for deterministic single-word output. Errors are logged and fail open. | `lib/llm/guardrails.ts` |
 | **System prompt hardening** | Explicit instructions to never reveal/modify the system prompt, never follow override instructions, treat injection attempts as off-topic. | `lib/llm/prompts/diagram.ts` |
 | **Output validation** | `parseLLMResponse()` only extracts content within `<<<MERMAID>>>` / `<<<CONFIG>>>` delimiters. Arbitrary LLM output cannot corrupt the diagram or config. Mermaid and YAML are validated before saving. | `lib/llm/parse.ts` |
 | **Rendering** | Mermaid rendered with `securityLevel: 'strict'` (no HTML). YAML parsed in safe mode. | Client-side |
@@ -220,6 +222,7 @@ conjure/
 │   │   └── sync.ts                    # Mermaid ↔ Config node ID sync (implemented)
 │   ├── mermaid/
 │   │   └── validate.ts                # Mermaid syntax validation (implemented)
+│   ├── rate-limit.ts                  # In-memory sliding window rate limiter (implemented)
 │   ├── sessions/
 │   │   └── validation.ts              # Session input validation (implemented)
 │   ├── utils/

@@ -154,10 +154,11 @@ Conjure handles cloud credentials and infrastructure operations. Security is bui
 - **Authentication** -- Supabase Auth with email/password and GitHub OAuth. All app routes are protected by middleware.
 - **Row Level Security** -- every database table enforces RLS. Users can only access their own sessions, credentials, and data.
 - **Credential encryption** -- AWS/GCP keys and user-provided LLM API keys (OpenRouter, Anthropic) are stored via Supabase Vault (encrypted at rest). Decrypted only server-side at the moment of use.
-- **Input sanitization** -- Mermaid diagrams rendered with `securityLevel: 'strict'`. YAML parsed in safe mode. LLM output treated as untrusted.
-- **Server-side validation** -- all API routes verify authentication and validate input. Client data is never trusted.
+- **Input sanitization** -- Mermaid diagrams rendered with `securityLevel: 'strict'`. YAML parsed in safe mode. LLM output treated as untrusted. Registration names trimmed and length-capped before storage.
+- **Server-side validation** -- all API routes verify authentication and validate input. Session names (100-char cap), GitHub repo format (`owner/repo`), and enum fields (target env, IaC tool, model) are all validated server-side.
 - **No secrets in the browser** -- only `NEXT_PUBLIC_*` env vars reach the client. Service keys, database URLs, and credentials are server-only.
-- **Rate limiting** -- auth, LLM, and deploy endpoints are rate limited to prevent abuse.
+- **Rate limiting** -- sliding window limiter on LLM chat (10/min), API key management (5/min), and session creation (5/min) per user. Auth endpoints rate-limited by Supabase.
+- **Open redirect protection** -- OAuth callback validates the `next` redirect param to block protocol-relative and external redirects.
 
 ---
 
