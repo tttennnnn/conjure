@@ -1,6 +1,10 @@
-# Conjure
+<p align="center">
+  <img src="docs/conjure-icon-512.png" alt="Conjure logo" width="120" />
+</p>
 
-> Describe your infrastructure. We generate the diagram, the code, and provision it.
+<h1 align="center">Conjure</h1>
+
+<p align="center">Describe your infrastructure. We generate the diagram, the code, and provision it.</p>
 
 Conjure is a **Prompt-to-Infrastructure** web app. Chat with an AI about your cloud infrastructure — it generates and iterates on an architecture diagram in real time, then converts it to Terraform/OpenTofu HCL you can deploy to AWS or GCP.
 
