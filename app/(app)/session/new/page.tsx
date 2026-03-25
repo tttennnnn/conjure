@@ -31,6 +31,24 @@ function modelTag(m: ModelOption): { label: string; className: string } | null {
   return null;
 }
 
+function groupModels(
+  models: ModelOption[],
+): { label: string; hint: string; models: ModelOption[] }[] {
+  const free = models.filter((m) => m.provider === "openrouter" && m.tier === "free");
+  const anthropic = models.filter((m) => m.provider === "anthropic");
+  const premiumOr = models.filter((m) => m.provider === "openrouter" && m.tier === "premium");
+
+  const groups: { label: string; hint: string; models: ModelOption[] }[] = [];
+  if (free.length > 0)
+    groups.push({ label: "Built-in", hint: "Free, powered by OpenRouter", models: free });
+  if (anthropic.length > 0)
+    groups.push({ label: "Anthropic", hint: "Uses your API key", models: anthropic });
+  if (premiumOr.length > 0)
+    groups.push({ label: "OpenRouter", hint: "Uses your API key", models: premiumOr });
+
+  return groups;
+}
+
 export default function NewSessionPage() {
   const router = useRouter();
   const [targetEnv, setTargetEnv] = useState<"aws" | "gcp">("aws");
@@ -119,19 +137,23 @@ export default function NewSessionPage() {
             ))}
           </div>
 
-          <div className="flex items-center gap-2.5">
-            <span className="w-[90px] shrink-0 text-[11px] text-[var(--muted)]">IaC tool</span>
-            <select
-              value={iacTool}
-              onChange={(e) => setIacTool(e.target.value as "terraform" | "opentofu")}
-              className="flex-1 rounded-md border border-[var(--border2)] bg-[var(--surface2)] px-2.5 py-[7px] text-[11px] text-[var(--text)]"
-            >
-              {IAC_OPTIONS.map((opt) => (
-                <option key={opt.id} value={opt.id}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--hint)]">
+            IaC tool
+          </div>
+          <div className="flex gap-1.5">
+            {IAC_OPTIONS.map((opt) => (
+              <button
+                key={opt.id}
+                onClick={() => setIacTool(opt.id)}
+                className={`flex-1 cursor-pointer rounded-lg border px-2.5 py-2 text-[11px] font-semibold transition-colors ${
+                  iacTool === opt.id
+                    ? "border-[var(--text)] bg-[var(--surface)]"
+                    : "border-[var(--border)] bg-[var(--surface2)] hover:border-[var(--border2)]"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
           </div>
         </section>
 
@@ -157,7 +179,7 @@ export default function NewSessionPage() {
             </button>
           </div>
           <div className="text-[10px] text-[var(--muted)]">
-            Optional -- you can also export code without GitHub.
+            Optional. You can also export code without GitHub.
           </div>
         </section>
 
@@ -169,40 +191,48 @@ export default function NewSessionPage() {
             </span>
             Model
           </div>
-          <div className="flex flex-col gap-1">
-            {models.map((m) => {
-              const tag = modelTag(m);
-              return (
-                <button
-                  key={m.id}
-                  onClick={() => setSelectedModel(m.id)}
-                  className={`flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-2 transition-colors ${
-                    selectedModel === m.id
-                      ? "border-[var(--text)] bg-[var(--surface)]"
-                      : "border-[var(--border)] bg-[var(--surface2)] hover:border-[var(--border2)]"
-                  }`}
-                >
-                  <div
-                    className={`flex h-3 w-3 shrink-0 items-center justify-center rounded-full border-[1.5px] ${
-                      selectedModel === m.id ? "border-[var(--text)]" : "border-[var(--border2)]"
-                    }`}
-                  >
-                    {selectedModel === m.id && (
-                      <div className="h-1.5 w-1.5 rounded-full bg-[var(--text)]" />
-                    )}
-                  </div>
-                  <span className="flex-1 text-left text-[11px] font-medium">{m.name}</span>
-                  {tag && (
-                    <span className={`rounded-[3px] px-1.5 py-px text-[9px] font-medium ${tag.className}`}>
-                      {tag.label}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+          <div className="flex flex-col gap-2.5">
+            {groupModels(models).map((group) => (
+              <div key={group.label} className="flex flex-col gap-1.5">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-[10px] font-semibold text-[var(--text)]">{group.label}</span>
+                  <span className="text-[9px] text-[var(--muted)]">{group.hint}</span>
+                </div>
+                {group.models.map((m) => {
+                  const tag = modelTag(m);
+                  return (
+                    <button
+                      key={m.id}
+                      onClick={() => setSelectedModel(m.id)}
+                      className={`flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-2 transition-colors ${
+                        selectedModel === m.id
+                          ? "border-[var(--text)] bg-[var(--surface)]"
+                          : "border-[var(--border)] bg-[var(--surface2)] hover:border-[var(--border2)]"
+                      }`}
+                    >
+                      <div
+                        className={`flex h-3 w-3 shrink-0 items-center justify-center rounded-full border-[1.5px] ${
+                          selectedModel === m.id ? "border-[var(--text)]" : "border-[var(--border2)]"
+                        }`}
+                      >
+                        {selectedModel === m.id && (
+                          <div className="h-1.5 w-1.5 rounded-full bg-[var(--text)]" />
+                        )}
+                      </div>
+                      <span className="flex-1 text-left text-[11px] font-medium">{m.name}</span>
+                      {tag && (
+                        <span className={`rounded-[3px] px-1.5 py-px text-[9px] font-medium ${tag.className}`}>
+                          {tag.label}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
             {models.length === 0 && (
               <div className="py-3 text-center text-[11px] text-[var(--hint)]">
-                Loading models…
+                Loading models...
               </div>
             )}
           </div>
@@ -219,14 +249,14 @@ export default function NewSessionPage() {
         <div className="flex justify-end gap-2">
           <button
             onClick={() => router.push("/home")}
-            className="cursor-pointer rounded-[7px] border border-[var(--border2)] bg-transparent px-4.5 py-2 text-xs text-[var(--text)]"
+            className="cursor-pointer rounded-[7px] border border-[var(--border2)] bg-[var(--surface)] px-4.5 py-2 text-xs text-[var(--text)] transition-colors hover:border-[var(--text)]"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={submitting || models.length === 0}
-            className="cursor-pointer rounded-[7px] border-none bg-[var(--text)] px-6 py-2 text-xs font-semibold text-white disabled:opacity-50"
+            className="cursor-pointer rounded-[7px] border-none bg-[var(--text)] px-6 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {submitting ? "Creating…" : "Start session →"}
           </button>

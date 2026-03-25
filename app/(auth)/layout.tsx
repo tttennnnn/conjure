@@ -1,3 +1,4 @@
+import AuthBrandingPanel from "@/components/auth/AuthBrandingPanel";
 import ConjureLogo from "@/components/ui/ConjureLogo";
 
 export default function AuthLayout({
@@ -8,39 +9,30 @@ export default function AuthLayout({
   return (
     <div className="flex min-h-full">
       {/* Left panel -- branding (desktop only) */}
-      <div className="relative hidden flex-1 flex-col items-center justify-center overflow-hidden bg-[var(--text)] px-12 py-12 text-white lg:flex">
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(ellipse at 30% 80%, rgba(83,74,183,0.25) 0%, transparent 60%), radial-gradient(ellipse at 70% 20%, rgba(24,95,165,0.2) 0%, transparent 50%)",
-          }}
-        />
-        <div className="relative w-full max-w-md">
-          <div className="flex items-center gap-3">
-            <ConjureLogo size={36} />
-            <h1 className="font-[family-name:var(--font-heading)] text-4xl font-bold tracking-tight">Conjure</h1>
+      <AuthBrandingPanel>
+        <div className="flex items-center gap-3">
+          <ConjureLogo size={36} />
+          <h1 className="font-[family-name:var(--font-heading)] text-4xl font-bold tracking-tight">Conjure</h1>
+        </div>
+        <p className="mt-4 text-base leading-relaxed text-white/60">
+          Describe your infrastructure in plain English. Get a diagram,
+          IaC code, and deploy -- all from one conversation.
+        </p>
+        <div className="mt-8 space-y-4 text-sm text-white/50">
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 text-lg">💬</span>
+            <span>Chat naturally -- the AI builds your architecture as you talk</span>
           </div>
-          <p className="mt-4 text-base leading-relaxed text-white/60">
-            Describe your infrastructure in plain English. Get a diagram,
-            IaC code, and deploy -- all from one conversation.
-          </p>
-          <div className="mt-8 space-y-4 text-sm text-white/50">
-            <div className="flex items-start gap-3">
-              <span className="mt-0.5 text-lg">💬</span>
-              <span>Chat naturally -- the AI builds your architecture as you talk</span>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="mt-0.5 text-lg">📐</span>
-              <span>Live diagrams that update with every message</span>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="mt-0.5 text-lg">🚀</span>
-              <span>Generate IaC and deploy from the browser</span>
-            </div>
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 text-lg">📐</span>
+            <span>Live diagrams that update with every message</span>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 text-lg">🚀</span>
+            <span>Generate IaC and deploy from the browser</span>
           </div>
         </div>
-      </div>
+      </AuthBrandingPanel>
 
       {/* Right panel -- auth form */}
       <div className="flex w-full shrink-0 flex-col bg-[var(--surface)] lg:w-[440px] lg:justify-center xl:w-[480px]">
