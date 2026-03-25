@@ -1,3 +1,5 @@
+import ConjureLogo from "@/components/ui/ConjureLogo";
+
 export default function AuthLayout({
   children,
 }: Readonly<{
@@ -15,7 +17,10 @@ export default function AuthLayout({
           }}
         />
         <div className="relative w-full max-w-md">
-          <h1 className="font-[family-name:var(--font-heading)] text-4xl font-bold tracking-tight">Conjure</h1>
+          <div className="flex items-center gap-3">
+            <ConjureLogo size={36} />
+            <h1 className="font-[family-name:var(--font-heading)] text-4xl font-bold tracking-tight">Conjure</h1>
+          </div>
           <p className="mt-4 text-base leading-relaxed text-white/60">
             Describe your infrastructure in plain English. Get a diagram,
             Terraform code, and deploy — all from one conversation.
@@ -49,7 +54,10 @@ export default function AuthLayout({
             }}
           />
           <div className="relative">
-            <h1 className="font-[family-name:var(--font-heading)] text-2xl font-bold tracking-tight">Conjure</h1>
+            <div className="flex items-center gap-2">
+              <ConjureLogo size={24} />
+              <h1 className="font-[family-name:var(--font-heading)] text-2xl font-bold tracking-tight">Conjure</h1>
+            </div>
             <p className="mt-1 text-sm text-white/50">Prompt-to-Infrastructure</p>
           </div>
         </div>

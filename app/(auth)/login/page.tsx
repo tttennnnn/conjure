@@ -34,12 +34,14 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(getInitialError(searchParams));
+  const [verified, setVerified] = useState(searchParams.get("verified") === "true");
+  const [passwordReset, setPasswordReset] = useState(searchParams.get("reset") === "true");
   const [loading, setLoading] = useState(false);
 
   // Pick up errors from URL hash (e.g. OAuth denial) and clean the URL
   useEffect(() => {
     const hashError = getHashError();
-    if (hashError || searchParams.get("error")) {
+    if (hashError || searchParams.get("error") || searchParams.get("verified") || searchParams.get("reset")) {
       if (hashError) setError(hashError);
       window.history.replaceState(null, "", "/login");
     }
@@ -48,6 +50,8 @@ function LoginForm() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
+    setVerified(false);
+    setPasswordReset(false);
 
     if (!email || !password) {
       setError("Please fill in all fields.");
@@ -90,6 +94,18 @@ function LoginForm() {
         <div className="h-px flex-1 bg-[var(--border)]" />
       </div>
 
+      {verified && (
+        <div className="mb-3 rounded-md bg-[var(--success-bg)] px-3 py-2 text-xs text-[var(--success-text)]">
+          Email verified successfully. You can now sign in.
+        </div>
+      )}
+
+      {passwordReset && (
+        <div className="mb-3 rounded-md bg-[var(--success-bg)] px-3 py-2 text-xs text-[var(--success-text)]">
+          Password updated successfully. Sign in with your new password.
+        </div>
+      )}
+
       {error && (
         <div className="mb-3 rounded-md bg-[var(--danger-bg)] px-3 py-2 text-xs text-[var(--danger-text)]">
           {error}
@@ -128,10 +144,16 @@ function LoginForm() {
         </div>
       </div>
 
+      <div className="mt-1 text-right">
+        <Link href="/forgot-password" className="text-[11px] text-[var(--muted)] hover:text-[var(--text)]">
+          Forgot password?
+        </Link>
+      </div>
+
       <button
         type="submit"
         disabled={loading}
-        className="mt-5 w-full rounded-[7px] bg-[var(--text)] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
+        className="mt-3 w-full rounded-[7px] bg-[var(--text)] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
       >
         {loading ? "Signing in..." : "Sign in"}
       </button>

@@ -10,7 +10,13 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      return NextResponse.redirect(origin);
+      const next = searchParams.get("next");
+      if (next) {
+        return NextResponse.redirect(`${origin}${next}`);
+      }
+      // Email verification: sign out so user must log in manually
+      await supabase.auth.signOut();
+      return NextResponse.redirect(`${origin}/login?verified=true`);
     }
   }
 

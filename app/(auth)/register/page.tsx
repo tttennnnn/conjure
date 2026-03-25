@@ -38,6 +38,7 @@ export default function RegisterPage() {
           first_name: firstName,
           last_name: lastName,
         },
+        emailRedirectTo: `${window.location.origin}/api/auth/callback`,
       },
     });
 

@@ -35,12 +35,14 @@ export async function updateSession(request: NextRequest) {
     pathname === "/" ||
     pathname.startsWith("/login") ||
     pathname.startsWith("/register") ||
+    pathname.startsWith("/forgot-password") ||
+    pathname.startsWith("/reset-password") ||
     pathname.startsWith("/api/auth");
 
-  // Authenticated user visiting auth pages → redirect to home
-  if (user && (pathname.startsWith("/login") || pathname.startsWith("/register"))) {
+  // Authenticated user visiting auth pages → redirect to home (except reset-password)
+  if (user && !pathname.startsWith("/reset-password") && (pathname.startsWith("/login") || pathname.startsWith("/register") || pathname.startsWith("/forgot-password"))) {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = "/home";
     return NextResponse.redirect(url);
   }
 
