@@ -2,9 +2,17 @@
 
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { useEffect, useRef, useState, useCallback } from "react";
 import ConjureLogo from "@/components/ui/ConjureLogo";
+import { groupByDate, relativeTime } from "@/lib/utils/date-groups";
+
+interface SessionItem {
+  id: string;
+  name: string;
+  status: string;
+  createdAt: string;
+}
 
 interface SidebarProps {
   displayName: string;
@@ -52,15 +60,36 @@ const EXPANDED_WIDTH = 210;
 const COLLAPSED_WIDTH = 48;
 const DURATION = 200;
 
+const STATUS_PILL: Record<string, string> = {
+  active: "bg-[var(--info-bg)] text-[var(--info-text)]",
+  deployed: "bg-[var(--success-bg)] text-[var(--success-text)]",
+  failed: "bg-[var(--danger-bg)] text-[var(--danger-text)]",
+};
+
 export default function Sidebar({ displayName, initials }: SidebarProps) {
   const router = useRouter();
-  // collapsed: drives the CSS width (animated)
-  // showExpanded: drives which content layout is rendered (delayed on collapse)
+  const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [showExpanded, setShowExpanded] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [sessions, setSessions] = useState<SessionItem[]>([]);
   const menuRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+  const fetchSessions = useCallback(async () => {
+    try {
+      const res = await fetch("/api/sessions");
+      if (res.ok) {
+        setSessions(await res.json());
+      }
+    } catch {
+      // Silently fail — sidebar still works
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSessions();
+  }, [fetchSessions, pathname]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -136,11 +165,13 @@ export default function Sidebar({ displayName, initials }: SidebarProps) {
           )}
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="flex w-full items-center justify-center py-3.5 transition-colors hover:bg-[var(--surface2)]"
+            className="flex w-full items-center py-3.5 transition-colors hover:bg-[var(--surface2)]"
             title={displayName}
           >
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--info-bg)] text-[9px] font-semibold text-[var(--info-text)]">
-              {initials}
+            <div className="flex w-[48px] shrink-0 items-center justify-center">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--info-bg)] text-[9px] font-semibold text-[var(--info-text)]">
+                {initials}
+              </div>
             </div>
           </button>
         </div>
@@ -184,11 +215,43 @@ export default function Sidebar({ displayName, initials }: SidebarProps) {
 
         {/* Session list */}
         <div className="flex-1 overflow-x-hidden overflow-y-auto p-1.5">
-          <div className={`px-2 py-6 text-center text-[11px] leading-relaxed text-[var(--hint)] ${textFade}`}>
-            No sessions yet.
-            <br />
-            Create one to get started.
-          </div>
+          {sessions.length === 0 ? (
+            <div className={`px-2 py-6 text-center text-[11px] leading-relaxed text-[var(--hint)] ${textFade}`}>
+              No sessions yet.
+              <br />
+              Create one to get started.
+            </div>
+          ) : (
+            <div className={textFade}>
+              {groupByDate(sessions).map((group) => (
+                <div key={group.label}>
+                  <div className="px-1.5 pt-2 pb-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--hint)]">
+                    {group.label}
+                  </div>
+                  {group.items.map((s) => {
+                    const isActive = pathname === `/session/${s.id}`;
+                    return (
+                      <Link
+                        key={s.id}
+                        href={`/session/${s.id}`}
+                        className={`mb-px flex flex-col gap-0.5 rounded-md px-[7px] py-1.5 transition-colors ${
+                          isActive ? "bg-[var(--surface2)]" : "hover:bg-[var(--surface2)]"
+                        }`}
+                      >
+                        <div className="truncate text-[11px] font-medium">{s.name}</div>
+                        <div className="flex items-center gap-1">
+                          <span className={`rounded-[3px] px-1.5 py-px text-[9px] font-medium capitalize ${STATUS_PILL[s.status] ?? STATUS_PILL.active}`}>
+                            {s.status}
+                          </span>
+                          <span className="text-[9px] text-[var(--hint)]">{relativeTime(s.createdAt)}</span>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Bottom: account */}
@@ -207,9 +270,6 @@ export default function Sidebar({ displayName, initials }: SidebarProps) {
               </div>
             </div>
             <span className={`flex-1 truncate text-left text-[11px] font-medium whitespace-nowrap ${textFade}`}>{displayName}</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={`shrink-0 text-[var(--muted)] ${textFade}`}>
-              <path d="M7 15l5-5 5 5" />
-            </svg>
           </button>
         </div>
     </aside>

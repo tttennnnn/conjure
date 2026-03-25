@@ -62,6 +62,41 @@ When the diagram looks right, click **Generate Code** → choose Terraform or Op
 
 ---
 
+## Architecture
+
+```mermaid
+graph TD
+    User[Browser]
+
+    subgraph Vercel["Next.js on Vercel"]
+        FE["React Frontend\n(App Router)"]
+        API["API Routes"]
+    end
+
+    subgraph LLM["LLM Providers"]
+        OR["OpenRouter\nFree models"]
+        Anthropic["Anthropic\nPremium models"]
+    end
+
+    subgraph SB["Supabase"]
+        DB[("Postgres")]
+        Auth["Auth"]
+        Vault["Vault"]
+    end
+
+    User --> FE
+    FE --> API
+    API -- "Call 1: prompt → Mermaid + YAML" --> OR & Anthropic
+    API -- "Call 2: Mermaid + YAML → HCL" --> OR & Anthropic
+    API -- "Prisma ORM" --> DB
+    API --> Auth
+    API -- "encrypt/decrypt keys" --> Vault
+```
+
+The frontend sends user messages to API routes, which orchestrate two LLM call types: **Call 1** generates/updates the Mermaid diagram and Config YAML; **Call 2** converts them to Terraform/OpenTofu HCL. Sessions, messages, and credentials are persisted in Supabase.
+
+---
+
 ## Getting started
 
 **Prerequisites:** Docker, Node.js 20+
@@ -96,7 +131,7 @@ Conjure handles cloud credentials and infrastructure operations. Security is bui
 
 ## Academic context
 
-Built for NTU SC4023 Cloud Computing (2026).
+Built for NTU SC4052 Cloud Computing (2026).
 
 This project explores **topology as a programmable entity** — infrastructure intent is declared through a structured, AI-generated diagram paired with a configuration file, and a generative AI layer produces validated, deployable IaC. A conversational interface makes this loop feel natural rather than mechanical.
 

@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { createClient } from "@/lib/supabase/server";
+import { getAuthenticatedUserId } from "@/lib/supabase/auth";
 import {
   deleteApiKey,
   getApiKey,
@@ -11,14 +11,6 @@ import {
   validateKeyFormat,
 } from "@/lib/vault/api-keys";
 import { NextResponse } from "next/server";
-
-async function getAuthenticatedUserId(): Promise<string | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user?.id ?? null;
-}
 
 export async function GET() {
   const userId = await getAuthenticatedUserId();
