@@ -16,12 +16,12 @@ export default function AuthLayout({
         </div>
         <p className="mt-4 text-base leading-relaxed text-white/60">
           Describe your infrastructure in plain English. Get a diagram,
-          IaC code, and deploy -- all from one conversation.
+          IaC code, and deploy — all from one conversation.
         </p>
         <div className="mt-8 space-y-4 text-sm text-white/50">
           <div className="flex items-start gap-3">
             <span className="mt-0.5 text-lg">💬</span>
-            <span>Chat naturally -- the AI builds your architecture as you talk</span>
+            <span>Chat naturally — the AI builds your architecture as you talk</span>
           </div>
           <div className="flex items-start gap-3">
             <span className="mt-0.5 text-lg">📐</span>
