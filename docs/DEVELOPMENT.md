@@ -54,7 +54,9 @@ Open [http://localhost:3000](http://localhost:3000).
 | `docker compose exec app bash` | Shell into the container |
 | `docker compose exec app npx prisma migrate dev` | Run database migrations |
 | `docker compose exec app npx prisma generate` | Regenerate Prisma client |
-| `docker compose exec -e NODE_ENV=production app npm run build` | Check production build |
+| `npm run typecheck` | Type-check locally before committing |
+| `npm run lint` | Lint locally before committing |
+| `docker compose exec -e NODE_ENV=production app npm run build` | Full production build check |
 | `docker compose down` | Stop everything |
 
 ### 5. GitHub Actions secrets
