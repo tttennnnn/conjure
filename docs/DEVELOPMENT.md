@@ -79,7 +79,7 @@ Infrastructure is defined by **two files that work as a pair**:
 
 Node IDs are the glue — every node ID in Mermaid must have a corresponding entry in the config. If one has an ID the other doesn't, that's a validation error.
 
-IaC (Terraform/OpenTofu HCL) is always a **derived output** generated from the Mermaid + Config pair. It is never edited directly or patched incrementally.
+IaC HCL is always a **derived output** generated from the Mermaid + Config pair. It is never edited directly or patched incrementally.
 
 ### Message classification
 
@@ -134,6 +134,55 @@ Defence is layered — no single layer is assumed to be sufficient.
 **Free models available out of the box:** Gemini 2.0 Flash, Llama 3.3 70B, GPT-4o mini.
 
 **BYOK (Bring Your Own Key):** Users can add their own OpenRouter key (unlocks all OpenRouter models) or Anthropic key (unlocks Claude Haiku, Sonnet, Opus) in Settings > API Keys.
+
+### Deploy error handling
+
+After code is generated, users can deploy via three paths with different levels of observability:
+
+| Path | Conjure visibility | Notes |
+|---|---|---|
+| **Conjure Deploy tab** | Full — output streamed, exit code captured | Plan/apply run server-side |
+| **GitHub merge (CI/CD)** | None (v1) | Manual "Mark as deployed/failed" control; webhook is a v2 feature |
+| **Manual (.zip download)** | None | User is fully on their own |
+
+#### Session status model
+
+| Status | When |
+|---|---|
+| `active` | No apply attempted, or session resumed after a failed apply |
+| `deploying` | Apply running (Conjure-managed) |
+| `deployed` | Apply succeeded |
+| `deploy_failed` | Apply failed — partial or full. Terraform state may have been updated. |
+
+#### Error types by phase
+
+**Plan errors** (nothing created yet — safe to fix and retry):
+- Invalid HCL syntax (LLM generation bug)
+- Invalid resource config (bad instance type, unsupported region)
+- Provider auth failure (wrong credentials)
+- State lock held by another run
+
+**Apply errors** (infrastructure may be partially created):
+- API quota/rate limits
+- Insufficient IAM permissions
+- Resource already exists (state drift)
+- Dependency failure (resource A failed so B can't proceed)
+- Timeout
+
+#### Recovery flow
+
+```
+Chat → Diagram/Config update → [stale banner] → Regenerate → Deploy
+  ↑                                                               |
+  └──────────── "Chat to fix" ←── plan/apply error ──────────────┘
+```
+
+- **Plan error:** block apply, show error inline in Deploy tab, offer "Chat to fix" which focuses the chat input with the error pre-filled
+- **Apply error:** set status `deploy_failed`, stream the full output, show which resources failed, offer retry (re-running apply is safe — Terraform only creates what's missing) and "Chat to fix"
+- **Post-deploy chat changes:** any Mermaid or Config change after a successful deploy sets `terraform_stale = true`; plan/apply are disabled in the Deploy tab until code is regenerated
+- **Never auto-destroy:** `terraform destroy` is never run automatically on failure
+
+The chat panel is always visible and never disabled by deploy status. Users can chat-to-fix directly from the Deploy tab without switching screens.
 
 ### Database
 

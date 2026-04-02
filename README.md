@@ -6,7 +6,7 @@
 
 > Describe your infrastructure. We generate the diagram, the code, and provision it.
 
-Conjure is a **Prompt-to-Infrastructure** web app. Chat with an AI about your cloud infrastructure: it generates and iterates on an architecture diagram in real time, then converts it to Terraform/OpenTofu HCL you can deploy to AWS or GCP.
+Conjure is a **Prompt-to-Infrastructure** web app. Chat with an AI about your cloud infrastructure: it generates and iterates on an architecture diagram in real time, then converts it to IaC HCL you can deploy to AWS or GCP.
 
 ---
 
@@ -25,9 +25,9 @@ Your infrastructure is defined by two files that work as a pair:
 - **Mermaid diagram**: topology (what exists and how it connects)
 - **Config YAML**: everything else (resource types, instance sizes, ports, networking)
 
-Together they are the source of truth. Terraform/OpenTofu HCL is always derived from them; never edited directly.
+Together they are the source of truth. IaC HCL is always derived from them; never edited directly.
 
-When the diagram looks right, click **Generate Code** → choose Terraform or OpenTofu, and HCL appears alongside. Deploy from the browser, or export to your own repo.
+When the diagram looks right, click **Generate Code** and HCL appears alongside. Deploy from the browser, or export to your own repo.
 
 ---
 
@@ -59,7 +59,7 @@ When the diagram looks right, click **Generate Code** → choose Terraform or Op
 | ORM | Prisma |
 | Diagrams | Mermaid.js |
 | Config format | YAML |
-| IaC output | Terraform / OpenTofu |
+| IaC output | Terraform (OpenTofu: planned) |
 | LLM (default) | OpenRouter (free models) |
 | LLM (BYOK) | Anthropic + OpenRouter |
 | Deployment | Vercel |
@@ -121,7 +121,7 @@ graph TD
     style Validate fill:#fee2e2,stroke:#dc2626
 ```
 
-**How it works:** Each user message triggers up to three LLM calls. **Call 0** (guardrail) classifies the input as infrastructure-related or off-topic: rejected messages never reach the main model, blocking prompt injection and misuse. **Call 1** takes the approved prompt plus the current Mermaid + Config YAML and generates updates with a chat explanation. **Call 2** is triggered separately by the "Generate Code" button, converting the full Mermaid + Config pair into Terraform/OpenTofu HCL. When the user is ready to deploy, the Plan/Apply route decrypts cloud credentials from Vault and runs the IaC tool against the target provider. All session data is persisted in Supabase Postgres with Row Level Security. Users start with free models via the app-provided OpenRouter key, and can bring their own OpenRouter or Anthropic key for premium models.
+**How it works:** Each user message triggers up to three LLM calls. **Call 0** (guardrail) classifies the input as infrastructure-related or off-topic: rejected messages never reach the main model, blocking prompt injection and misuse. **Call 1** takes the approved prompt plus the current Mermaid + Config YAML and generates updates with a chat explanation. **Call 2** is triggered separately by the "Generate Code" button, converting the full Mermaid + Config pair into IaC HCL. When the user is ready to deploy, the Plan/Apply route decrypts cloud credentials from Vault and runs the IaC tool against the target provider. All session data is persisted in Supabase Postgres with Row Level Security. Users start with free models via the app-provided OpenRouter key, and can bring their own OpenRouter or Anthropic key for premium models.
 
 **Security boundaries:** Auth and Vault (amber) are the trust boundaries. Input Guardrails and Output Validation (red) are the LLM security layer. The browser only holds an HttpOnly session cookie; no secrets reach the client. Every API request is authenticated via JWT and scoped by Supabase RLS so users can only access their own data. Credentials and API keys are encrypted at rest in Vault and decrypted server-side only at the moment of use.
 
@@ -160,25 +160,3 @@ Conjure handles cloud credentials and infrastructure operations. Security is bui
 - **Rate limiting**: sliding window limiter on LLM chat (10/min), API key management (5/min), and session creation (5/min) per user. Auth endpoints rate-limited by Supabase.
 - **Open redirect protection**: OAuth callback validates the `next` redirect param to block protocol-relative and external redirects.
 
----
-
-## Academic context
-
-Built for NTU SC4052 Cloud Computing (2026).
-
-This project explores **topology as a programmable entity**: infrastructure intent is declared through a structured, AI-generated diagram paired with a configuration file, and a generative AI layer produces validated, deployable IaC. A conversational interface makes this loop feel natural rather than mechanical.
-
----
-
-## Team
-
-| Name | Student ID |
-|---|---|
-| -- | -- |
-| -- | -- |
-
----
-
-## License
-
-MIT
