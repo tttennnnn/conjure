@@ -17,30 +17,30 @@ ALTER TABLE user_api_keys ENABLE ROW LEVEL SECURITY;
 -- sessions: users can only access their own sessions
 CREATE POLICY "Users can manage own sessions"
   ON sessions FOR ALL
-  USING (auth.uid()::text = user_id)
-  WITH CHECK (auth.uid()::text = user_id);
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 
 -- messages: access through parent session ownership
 -- (messages has no user_id column; ownership is via the parent session)
 CREATE POLICY "Users can manage messages in own sessions"
   ON messages FOR ALL
-  USING (session_id IN (SELECT id FROM sessions WHERE user_id = auth.uid()::text))
-  WITH CHECK (session_id IN (SELECT id FROM sessions WHERE user_id = auth.uid()::text));
+  USING (session_id IN (SELECT id FROM sessions WHERE user_id = auth.uid()))
+  WITH CHECK (session_id IN (SELECT id FROM sessions WHERE user_id = auth.uid()));
 
 -- user_custom_models: users can only access their own custom models
 CREATE POLICY "Users can manage own custom models"
   ON user_custom_models FOR ALL
-  USING (auth.uid()::text = user_id)
-  WITH CHECK (auth.uid()::text = user_id);
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 
 -- credential_profiles: users can only access their own cloud credentials
 CREATE POLICY "Users can manage own credential profiles"
   ON credential_profiles FOR ALL
-  USING (auth.uid()::text = user_id)
-  WITH CHECK (auth.uid()::text = user_id);
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 
 -- user_api_keys: users can only access their own API keys
 CREATE POLICY "Users can manage own API keys"
   ON user_api_keys FOR ALL
-  USING (auth.uid()::text = user_id)
-  WITH CHECK (auth.uid()::text = user_id);
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
