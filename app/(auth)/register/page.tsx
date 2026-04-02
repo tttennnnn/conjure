@@ -57,7 +57,11 @@ export default function RegisterPage() {
     });
 
     if (error) {
-      setError(error.message);
+      const message =
+        typeof error.message === "string" && error.message.trim() && error.message !== "{}"
+          ? error.message
+          : "Something went wrong. Please try again.";
+      setError(message);
       setLoading(false);
       return;
     }
