@@ -1,3 +1,6 @@
+// When adding a new model, also add ENABLE ROW LEVEL SECURITY and a policy
+// for it in supabase/rls.sql, then re-run that file in the Supabase Dashboard.
+
 generator client {
   provider = "prisma-client-js"
 }

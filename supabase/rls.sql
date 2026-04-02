@@ -1,6 +1,10 @@
 -- Conjure: Row-Level Security policies
 -- Run once in the Supabase Dashboard SQL editor after creating a new project.
 -- Safe to re-run (uses IF NOT EXISTS).
+--
+-- IMPORTANT: keep this file in sync with prisma/schema.prisma.
+-- Any new table added to the schema needs a corresponding ENABLE ROW LEVEL SECURITY
+-- and CREATE POLICY block here, or Supabase will flag it as publicly accessible.
 
 -- Enable RLS on all tables
 ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
