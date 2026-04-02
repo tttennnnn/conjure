@@ -5,15 +5,37 @@ import { validateMermaid } from "@/lib/mermaid/validate";
 
 interface DiagramPanelProps {
   mermaidCode: string;
+  isStale: boolean;
+  hasCode: boolean;
+  isGenerating: boolean;
+  /** When true, suppresses the "Diagram" tab label (outer context already provides the tab bar). */
+  hasOuterTabs?: boolean;
+  onGenerateCode: () => void;
+  onEditSave: (newMermaidCode: string) => void;
 }
 
 let mermaidInitialized = false;
 
-export default function DiagramPanel({ mermaidCode }: DiagramPanelProps) {
+export default function DiagramPanel({
+  mermaidCode,
+  isStale,
+  hasCode,
+  isGenerating,
+  hasOuterTabs = false,
+  onGenerateCode,
+  onEditSave,
+}: DiagramPanelProps) {
   const [svgContent, setSvgContent] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [editValue, setEditValue] = useState(mermaidCode);
   const containerRef = useRef<HTMLDivElement>(null);
   const renderCounter = useRef(0);
+
+  // Keep edit buffer in sync when mermaid changes externally (e.g. chat update)
+  useEffect(() => {
+    if (!editMode) setEditValue(mermaidCode);
+  }, [mermaidCode, editMode]);
 
   const renderDiagram = useCallback(async (code: string) => {
     if (typeof window === "undefined") return;
@@ -55,23 +77,98 @@ export default function DiagramPanel({ mermaidCode }: DiagramPanelProps) {
       setError(null);
       return;
     }
-    renderDiagram(mermaidCode);
-  }, [mermaidCode, renderDiagram]);
+    if (!editMode) renderDiagram(mermaidCode);
+  }, [mermaidCode, editMode, renderDiagram]);
+
+  function handleEditSave() {
+    const trimmed = editValue.trim();
+    if (trimmed && trimmed !== mermaidCode) onEditSave(trimmed);
+    setEditMode(false);
+  }
+
+  function handleEditKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "s" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      handleEditSave();
+    }
+    if (e.key === "Escape") {
+      setEditValue(mermaidCode);
+      setEditMode(false);
+    }
+  }
+
+  function handleExport() {
+    if (!mermaidCode) return;
+    const blob = new Blob([mermaidCode], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "diagram.mmd";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  const generateLabel = isGenerating ? "Generating…" : hasCode ? "Regenerate" : "Generate Code";
 
   return (
     <div className="flex flex-1 flex-col min-w-0 bg-[var(--bg)]">
-      {/* Tab bar */}
-      <div className="flex h-[38px] shrink-0 items-end border-b border-[var(--border)] bg-[var(--surface)] px-2.5">
-        <div className="flex h-[30px] items-center rounded-t-md border border-b-0 border-[var(--border)] bg-[var(--bg)] px-3 text-[10px] font-medium text-[var(--text)]">
-          Diagram
+      {/* Tab bar + toolbar */}
+      <div className="flex h-[38px] shrink-0 items-end justify-between border-b border-[var(--border)] bg-[var(--surface)] px-2.5">
+        {!hasOuterTabs && (
+          <div className="flex h-[30px] items-center rounded-t-md border border-b-0 border-[var(--border)] bg-[var(--bg)] px-3 text-[10px] font-medium text-[var(--text)]">
+            Diagram
+          </div>
+        )}
+        {/* Spacer so toolbar right-aligns whether or not the tab label is shown */}
+        {hasOuterTabs && <div />}
+        <div className="flex items-center gap-1 pb-1">
+          <button
+            onClick={() => { if (editMode) { handleEditSave(); } else { setEditValue(mermaidCode); setEditMode(true); } }}
+            className={["rounded px-2 py-0.5 text-[10px] transition-colors", editMode ? "bg-[var(--accent,#6366f1)] text-white" : "text-[var(--muted)] hover:bg-[var(--surface2)] hover:text-[var(--text)]"].join(" ")}
+          >
+            {editMode ? "Save" : "Edit"}
+          </button>
+          <button
+            onClick={handleExport}
+            disabled={!mermaidCode}
+            className="rounded px-2 py-0.5 text-[10px] text-[var(--muted)] hover:bg-[var(--surface2)] hover:text-[var(--text)] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+          >
+            Export
+          </button>
+          <button
+            onClick={onGenerateCode}
+            disabled={isGenerating || !mermaidCode}
+            className="flex items-center gap-1 rounded bg-[var(--accent,#6366f1)] px-2.5 py-0.5 text-[10px] font-medium text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:pointer-events-none"
+          >
+            {isGenerating && <span className="inline-block h-2 w-2 animate-spin rounded-full border border-white border-t-transparent" />}
+            {generateLabel}
+          </button>
         </div>
       </div>
+
+      {/* Stale banner */}
+      {isStale && hasCode && (
+        <div className="shrink-0 border-b border-[var(--warning-border,#f59e0b)] bg-[var(--warning-bg,#fef3c7)] px-4 py-2 text-[11px] text-[var(--warning-text,#92400e)]">
+          Code is out of date — click Regenerate.
+        </div>
+      )}
 
       {/* Diagram canvas */}
       <div
         ref={containerRef}
         className="flex flex-1 items-center justify-center overflow-auto p-6"
       >
+        {editMode ? (
+          <textarea
+            autoFocus
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={handleEditSave}
+            onKeyDown={handleEditKeyDown}
+            className="h-full w-full resize-none rounded border border-[var(--border)] bg-[var(--surface)] p-3 font-[JetBrains_Mono,monospace] text-[11px] leading-relaxed text-[var(--text)] focus:outline-none focus:ring-1 focus:ring-[var(--accent,#6366f1)]"
+            spellCheck={false}
+          />
+        ) : (<>
         {!mermaidCode && !error && (
           <div className="flex flex-col items-center gap-3">
             <div className="flex h-14 w-14 items-center justify-center rounded-[14px] border border-[var(--border)] bg-[var(--surface)] text-[22px] text-[var(--hint)]">
@@ -103,6 +200,7 @@ export default function DiagramPanel({ mermaidCode }: DiagramPanelProps) {
             dangerouslySetInnerHTML={{ __html: svgContent }}
           />
         )}
+        </>)}
       </div>
     </div>
   );
