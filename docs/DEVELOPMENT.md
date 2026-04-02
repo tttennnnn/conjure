@@ -57,7 +57,17 @@ Open [http://localhost:3000](http://localhost:3000).
 | `docker compose exec -e NODE_ENV=production app npm run build` | Check production build |
 | `docker compose down` | Stop everything |
 
-### 5. Adding a new npm package
+### 5. GitHub Actions secrets
+
+The CI and keep-alive workflows need these secrets added once in repo Settings → Secrets and variables → Actions:
+
+| Secret | Value |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Same as `.env.local` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Same as `.env.local` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Same as `.env.local` |
+
+### 6. Adding a new npm package
 
 ```bash
 npm install <package>          # local (for IDE)
@@ -195,6 +205,8 @@ Five main tables (see `prisma/schema.prisma`):
 - **user_api_keys** — LLM API keys (OpenRouter, Anthropic) encrypted via Supabase Vault
 
 User accounts are managed by Supabase Auth (not in Prisma).
+
+After pushing the schema with `prisma db push`, run `supabase/rls.sql` in the Supabase Dashboard SQL editor to enable Row-Level Security on all tables.
 
 ---
 
