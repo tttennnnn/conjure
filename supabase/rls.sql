@@ -1,0 +1,41 @@
+-- Conjure: Row-Level Security policies
+-- Run once in the Supabase Dashboard SQL editor after creating a new project.
+-- Safe to re-run (uses IF NOT EXISTS).
+
+-- Enable RLS on all tables
+ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_custom_models ENABLE ROW LEVEL SECURITY;
+ALTER TABLE credential_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_api_keys ENABLE ROW LEVEL SECURITY;
+
+-- sessions: users can only access their own sessions
+CREATE POLICY IF NOT EXISTS "Users can manage own sessions"
+  ON sessions FOR ALL
+  USING (auth.uid()::text = "userId")
+  WITH CHECK (auth.uid()::text = "userId");
+
+-- messages: access through parent session ownership
+-- (messages has no userId column; ownership is via the parent session)
+CREATE POLICY IF NOT EXISTS "Users can manage messages in own sessions"
+  ON messages FOR ALL
+  USING ("sessionId" IN (SELECT id FROM sessions WHERE "userId" = auth.uid()::text))
+  WITH CHECK ("sessionId" IN (SELECT id FROM sessions WHERE "userId" = auth.uid()::text));
+
+-- user_custom_models: users can only access their own custom models
+CREATE POLICY IF NOT EXISTS "Users can manage own custom models"
+  ON user_custom_models FOR ALL
+  USING (auth.uid()::text = "userId")
+  WITH CHECK (auth.uid()::text = "userId");
+
+-- credential_profiles: users can only access their own cloud credentials
+CREATE POLICY IF NOT EXISTS "Users can manage own credential profiles"
+  ON credential_profiles FOR ALL
+  USING (auth.uid()::text = "userId")
+  WITH CHECK (auth.uid()::text = "userId");
+
+-- user_api_keys: users can only access their own API keys
+CREATE POLICY IF NOT EXISTS "Users can manage own API keys"
+  ON user_api_keys FOR ALL
+  USING (auth.uid()::text = "userId")
+  WITH CHECK (auth.uid()::text = "userId");
