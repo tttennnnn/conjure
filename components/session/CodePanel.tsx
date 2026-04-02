@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 
-export interface TerraformFiles {
+export interface IacFiles {
   mainTf: string;
   variablesTf: string;
   outputsTf: string;
 }
 
 interface CodePanelProps {
-  terraformCode: TerraformFiles;
+  iacCode: IacFiles;
   isStale: boolean;
   iacTool: string;
 }
@@ -32,7 +32,7 @@ function downloadTextFile(filename: string, content: string) {
   URL.revokeObjectURL(url);
 }
 
-async function downloadZip(files: TerraformFiles) {
+async function downloadZip(files: IacFiles) {
   // Build a minimal ZIP archive without external dependencies.
   // Uses the browser's CompressionStream (supported in all modern browsers).
   // Falls back to downloading files individually if CompressionStream is unavailable.
@@ -162,11 +162,11 @@ function makeCrcTable(): number[] {
   return _crcTable;
 }
 
-export default function CodePanel({ terraformCode, isStale, iacTool }: CodePanelProps) {
+export default function CodePanel({ iacCode, isStale, iacTool }: CodePanelProps) {
   const [activeFile, setActiveFile] = useState<FileKey>("mainTf");
   const [copied, setCopied] = useState(false);
 
-  const activeContent = terraformCode[activeFile];
+  const activeContent = iacCode[activeFile];
 
   function handleCopy() {
     navigator.clipboard.writeText(activeContent).then(() => {
@@ -176,7 +176,7 @@ export default function CodePanel({ terraformCode, isStale, iacTool }: CodePanel
   }
 
   function handleDownloadZip() {
-    downloadZip(terraformCode);
+    downloadZip(iacCode);
   }
 
   return (

@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import ChatPanel from "./ChatPanel";
 import ChatInput from "./ChatInput";
 import DiagramPanel from "./DiagramPanel";
-import CodePanel, { type TerraformFiles } from "./CodePanel";
+import CodePanel, { type IacFiles } from "./CodePanel";
 
 export interface ChatMessage {
   id: string;
@@ -22,8 +22,8 @@ interface SessionData {
   mermaidCode: string;
   configYaml: string;
   status: string;
-  terraformCode: TerraformFiles | null;
-  terraformStale: boolean;
+  iacCode: IacFiles | null;
+  iacStale: boolean;
 }
 
 interface SessionViewProps {
@@ -36,8 +36,8 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
   const [mermaidCode, setMermaidCode] = useState(session.mermaidCode);
   const [, setConfigYaml] = useState(session.configYaml);
   const [isLoading, setIsLoading] = useState(false);
-  const [terraformCode, setTerraformCode] = useState<TerraformFiles | null>(session.terraformCode);
-  const [terraformStale, setTerraformStale] = useState(session.terraformStale);
+  const [iacCode, setIacCode] = useState<IacFiles | null>(session.iacCode);
+  const [iacStale, setIacStale] = useState(session.iacStale);
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState<"diagram" | "code">("diagram");
 
@@ -84,8 +84,8 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
         if (data.mermaidCode) setMermaidCode(data.mermaidCode);
         if (data.configYaml) setConfigYaml(data.configYaml);
         // Mark code stale when diagram or config changes and code already exists
-        if ((data.mermaidCode || data.configYaml) && terraformCode) {
-          setTerraformStale(true);
+        if ((data.mermaidCode || data.configYaml) && iacCode) {
+          setIacStale(true);
         }
       } catch {
         const errorMsg: ChatMessage = {
@@ -99,7 +99,7 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
         setIsLoading(false);
       }
     },
-    [session.id, terraformCode],
+    [session.id, iacCode],
   );
 
   const handleGenerateCode = useCallback(async () => {
@@ -115,9 +115,9 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
         console.error("Code generation failed:", data.error);
         return;
       }
-      const files: TerraformFiles = await res.json();
-      setTerraformCode(files);
-      setTerraformStale(false);
+      const files: IacFiles = await res.json();
+      setIacCode(files);
+      setIacStale(false);
       setActiveTab("code");
     } catch (err) {
       console.error("Code generation error:", err);
@@ -129,9 +129,9 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
   const handleEditSave = useCallback(
     (newMermaidCode: string) => {
       setMermaidCode(newMermaidCode);
-      if (terraformCode) setTerraformStale(true);
+      if (iacCode) setIacStale(true);
     },
-    [terraformCode],
+    [iacCode],
   );
 
   return (
@@ -163,7 +163,7 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
         {/* Diagram / Code column */}
         <div className="flex flex-1 flex-col min-w-0">
           {/* Tab switcher — Code tab only appears after first generation */}
-          {terraformCode && (
+          {iacCode && (
             <div className="flex h-[38px] shrink-0 items-end border-b border-[var(--border)] bg-[var(--surface)] px-2.5">
               {(["diagram", "code"] as const).map((tab) => (
                 <button
@@ -182,20 +182,20 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
             </div>
           )}
 
-          {activeTab === "diagram" || !terraformCode ? (
+          {activeTab === "diagram" || !iacCode ? (
             <DiagramPanel
               mermaidCode={mermaidCode}
-              isStale={terraformStale}
-              hasCode={!!terraformCode}
-              hasOuterTabs={!!terraformCode}
+              isStale={iacStale}
+              hasCode={!!iacCode}
+              hasOuterTabs={!!iacCode}
               isGenerating={isGenerating}
               onGenerateCode={handleGenerateCode}
               onEditSave={handleEditSave}
             />
           ) : (
             <CodePanel
-              terraformCode={terraformCode}
-              isStale={terraformStale}
+              iacCode={iacCode}
+              isStale={iacStale}
               iacTool={session.iacTool}
             />
           )}

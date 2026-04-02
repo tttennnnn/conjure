@@ -88,8 +88,8 @@ export async function POST(request: Request) {
       where: { id: sessionId },
       data: {
         // Prisma Json type requires a plain object — cast to satisfy the index signature
-        terraformCode: files as unknown as Record<string, string>,
-        terraformStale: false,
+        iacCode: files as unknown as Record<string, string>,
+        iacStale: false,
       },
     });
 

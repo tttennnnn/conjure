@@ -18,8 +18,8 @@ model Session {
   model          String
   mermaidCode    String   @default("") @map("mermaid_code")
   configYaml     String   @default("") @map("config_yaml")
-  terraformCode  Json?    @map("terraform_code")
-  terraformStale Boolean  @default(false) @map("terraform_stale")
+  iacCode        Json?    @map("iac_code")
+  iacStale       Boolean  @default(false) @map("iac_stale")
   githubRepo     String?  @map("github_repo")
   status         String   @default("active")
   createdAt      DateTime @default(now()) @map("created_at")

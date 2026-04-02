@@ -26,13 +26,13 @@ export default async function SessionPage({
 
   if (!session || session.userId !== user.id) notFound();
 
-  // Narrow the Prisma Json? type to TerraformFiles shape (or null)
-  const terraformCode =
-    session.terraformCode &&
-    typeof session.terraformCode === "object" &&
-    !Array.isArray(session.terraformCode) &&
-    "mainTf" in session.terraformCode
-      ? (session.terraformCode as { mainTf: string; variablesTf: string; outputsTf: string })
+  // Narrow the Prisma Json? type to IacFiles shape (or null)
+  const iacCode =
+    session.iacCode &&
+    typeof session.iacCode === "object" &&
+    !Array.isArray(session.iacCode) &&
+    "mainTf" in session.iacCode
+      ? (session.iacCode as { mainTf: string; variablesTf: string; outputsTf: string })
       : null;
 
   return (
@@ -46,8 +46,8 @@ export default async function SessionPage({
         mermaidCode: session.mermaidCode,
         configYaml: session.configYaml,
         status: session.status,
-        terraformCode,
-        terraformStale: session.terraformStale,
+        iacCode,
+        iacStale: session.iacStale,
       }}
       initialMessages={session.messages.map((m) => ({
         id: m.id,

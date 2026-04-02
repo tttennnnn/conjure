@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { buildCodegenSystemPrompt, CODEGEN_TOOL } from "./prompts/codegen";
 
-export interface TerraformFiles {
+export interface IacFiles {
   mainTf: string;
   variablesTf: string;
   outputsTf: string;
@@ -28,7 +28,7 @@ function extractDelimitedBlock(text: string, tag: string): string {
   return text.slice(start + open.length, end).trim();
 }
 
-async function codegenOpenRouter(params: CodegenParams): Promise<TerraformFiles> {
+async function codegenOpenRouter(params: CodegenParams): Promise<IacFiles> {
   const client = new OpenAI({
     baseURL: "https://openrouter.ai/api/v1",
     apiKey: params.apiKey,
@@ -61,7 +61,7 @@ async function codegenOpenRouter(params: CodegenParams): Promise<TerraformFiles>
   };
 }
 
-async function codegenAnthropic(params: CodegenParams): Promise<TerraformFiles> {
+async function codegenAnthropic(params: CodegenParams): Promise<IacFiles> {
   const client = new Anthropic({ apiKey: params.apiKey });
 
   const systemPrompt = buildCodegenSystemPrompt(
@@ -109,7 +109,7 @@ async function codegenAnthropic(params: CodegenParams): Promise<TerraformFiles> 
   };
 }
 
-export async function generateCode(params: CodegenParams): Promise<TerraformFiles> {
+export async function generateCode(params: CodegenParams): Promise<IacFiles> {
   if (params.provider === "anthropic") {
     return codegenAnthropic(params);
   }

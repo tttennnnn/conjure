@@ -203,8 +203,8 @@ export async function POST(request: Request) {
 
     if (result.mermaid || result.configYaml) {
       // Mark terraform code as stale if it exists
-      if (session.terraformCode) {
-        updateData.terraformStale = true;
+      if (session.iacCode) {
+        updateData.iacStale = true;
       }
       await getPrisma().session.update({
         where: { id: sessionId },
