@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
+  type IacTool,
   type ModelOption,
   getAvailableModels,
 } from "@/lib/sessions/validation";
@@ -14,7 +15,6 @@ const ENV_OPTIONS = [
 
 const IAC_OPTIONS = [
   { id: "terraform" as const, label: "Terraform" },
-  { id: "opentofu" as const, label: "OpenTofu" },
 ];
 
 function modelTag(m: ModelOption): { label: string; className: string } | null {
@@ -52,7 +52,7 @@ function groupModels(
 export default function NewSessionPage() {
   const router = useRouter();
   const [targetEnv, setTargetEnv] = useState<"aws" | "gcp">("aws");
-  const [iacTool, setIacTool] = useState<"terraform" | "opentofu">("terraform");
+  const [iacTool, setIacTool] = useState<IacTool>("terraform");
   const [selectedModel, setSelectedModel] = useState("gemini-2.0-flash");
   const [models, setModels] = useState<ModelOption[]>([]);
   const [submitting, setSubmitting] = useState(false);

@@ -64,7 +64,7 @@ export async function POST(request: Request) {
 
   if (!isValidIacTool(iacTool)) {
     return NextResponse.json(
-      { error: 'iacTool must be "terraform" or "opentofu"' },
+      { error: 'iacTool must be "terraform"' },
       { status: 400 },
     );
   }

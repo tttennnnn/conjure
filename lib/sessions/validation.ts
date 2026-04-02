@@ -1,7 +1,7 @@
 export const TARGET_ENVS = ["aws", "gcp"] as const;
 export type TargetEnv = (typeof TARGET_ENVS)[number];
 
-export const IAC_TOOLS = ["terraform", "opentofu"] as const;
+export const IAC_TOOLS = ["terraform"] as const;
 export type IacTool = (typeof IAC_TOOLS)[number];
 
 export interface ModelOption {
