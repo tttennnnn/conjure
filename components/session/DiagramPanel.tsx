@@ -12,6 +12,7 @@ interface DiagramPanelProps {
   hasOuterTabs?: boolean;
   onGenerateCode: () => void;
   onEditSave: (newMermaidCode: string) => void;
+  onNodeClick?: (nodeId: string) => void;
 }
 
 let mermaidInitialized = false;
@@ -24,6 +25,7 @@ export default function DiagramPanel({
   hasOuterTabs = false,
   onGenerateCode,
   onEditSave,
+  onNodeClick,
 }: DiagramPanelProps) {
   const [svgContent, setSvgContent] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -79,6 +81,28 @@ export default function DiagramPanel({
     }
     if (!editMode) renderDiagram(mermaidCode);
   }, [mermaidCode, editMode, renderDiagram]);
+
+  // Attach click listeners to Mermaid SVG nodes after each render
+  useEffect(() => {
+    if (!svgContent || !containerRef.current || !onNodeClick) return;
+
+    const nodeEls = containerRef.current.querySelectorAll<SVGGElement>(".node");
+    const cleanups: (() => void)[] = [];
+
+    nodeEls.forEach((el) => {
+      // Mermaid renders node IDs as "flowchart-{nodeId}-{n}"
+      const match = el.id.match(/^flowchart-(.+)-\d+$/);
+      if (!match || !match[1]) return;
+      const nodeId = match[1];
+
+      el.style.cursor = "pointer";
+      const handler = () => onNodeClick(nodeId);
+      el.addEventListener("click", handler);
+      cleanups.push(() => el.removeEventListener("click", handler));
+    });
+
+    return () => cleanups.forEach((fn) => fn());
+  }, [svgContent, onNodeClick]);
 
   function handleEditSave() {
     const trimmed = editValue.trim();

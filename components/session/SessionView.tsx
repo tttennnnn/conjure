@@ -5,6 +5,7 @@ import ChatPanel from "./ChatPanel";
 import ChatInput from "./ChatInput";
 import DiagramPanel from "./DiagramPanel";
 import CodePanel, { type IacFiles } from "./CodePanel";
+import PropertiesDrawer from "./PropertiesDrawer";
 
 export interface ChatMessage {
   id: string;
@@ -34,12 +35,13 @@ interface SessionViewProps {
 export default function SessionView({ session, initialMessages }: SessionViewProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [mermaidCode, setMermaidCode] = useState(session.mermaidCode);
-  const [, setConfigYaml] = useState(session.configYaml);
+  const [configYaml, setConfigYaml] = useState(session.configYaml);
   const [isLoading, setIsLoading] = useState(false);
   const [iacCode, setIacCode] = useState<IacFiles | null>(session.iacCode);
   const [iacStale, setIacStale] = useState(session.iacStale);
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState<"diagram" | "code">("diagram");
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   const handleSendMessage = useCallback(
     async (content: string) => {
@@ -182,23 +184,39 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
             </div>
           )}
 
-          {activeTab === "diagram" || !iacCode ? (
-            <DiagramPanel
-              mermaidCode={mermaidCode}
-              isStale={iacStale}
-              hasCode={!!iacCode}
-              hasOuterTabs={!!iacCode}
-              isGenerating={isGenerating}
-              onGenerateCode={handleGenerateCode}
-              onEditSave={handleEditSave}
-            />
-          ) : (
-            <CodePanel
-              iacCode={iacCode}
-              isStale={iacStale}
-              iacTool={session.iacTool}
-            />
-          )}
+          <div className="flex flex-1 min-h-0">
+            {activeTab === "diagram" || !iacCode ? (
+              <DiagramPanel
+                mermaidCode={mermaidCode}
+                isStale={iacStale}
+                hasCode={!!iacCode}
+                hasOuterTabs={!!iacCode}
+                isGenerating={isGenerating}
+                onGenerateCode={handleGenerateCode}
+                onEditSave={handleEditSave}
+                onNodeClick={setSelectedNodeId}
+              />
+            ) : (
+              <CodePanel
+                iacCode={iacCode}
+                isStale={iacStale}
+                iacTool={session.iacTool}
+              />
+            )}
+
+            {selectedNodeId && (
+              <PropertiesDrawer
+                nodeId={selectedNodeId}
+                configYaml={configYaml}
+                sessionId={session.id}
+                onClose={() => setSelectedNodeId(null)}
+                onSaved={(newYaml, newIacStale) => {
+                  setConfigYaml(newYaml);
+                  if (newIacStale) setIacStale(true);
+                }}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>
