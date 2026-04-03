@@ -47,19 +47,75 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ### 4. Common commands
 
-| Command | What it does |
-|---|---|
-| `docker compose up` | Start dev server (after first build) |
-| `docker compose up --build` | Rebuild container (after changing package.json) |
-| `docker compose exec app bash` | Shell into the container |
-| `docker compose exec app npx prisma migrate dev` | Run database migrations |
-| `docker compose exec app npx prisma generate` | Regenerate Prisma client |
-| `npm run typecheck` | Type-check locally before committing |
-| `npm run lint` | Lint locally before committing |
-| `docker compose exec -e NODE_ENV=production app npm run build` | Full production build check |
-| `docker compose down` | Stop everything |
+**Run in your terminal (host):**
 
-### 5. GitHub Actions secrets
+| Command | When to run |
+|---|---|
+| `npm run typecheck` | Before committing — catches TypeScript errors |
+| `npm run lint` | Before committing — catches code quality issues |
+| `docker compose up` | Start the dev server |
+| `docker compose up --build` | Start and rebuild — required after adding/removing packages |
+| `docker compose exec app bash` | Open a shell inside the running container |
+| `docker compose down` | Stop the dev server |
+
+**Run inside the container** (requires `docker compose up` to be running):
+
+| Command | When to run |
+|---|---|
+| `docker compose exec -e NODE_ENV=production app npm run build` | Before pushing — catches route/bundle errors that typecheck misses |
+| `docker compose exec app npx prisma generate` | After changing `schema.prisma` |
+| `docker compose exec app npx prisma db push` | After changing `schema.prisma` — **empty database only** (see Schema changes below) |
+| `docker compose exec app npx prisma migrate dev --name <description>` | After changing `schema.prisma` — **database has data** (see Schema changes below) |
+| `docker compose exec app npx prisma migrate deploy` | Production only — applies existing migration files |
+
+> The host and container have independent `node_modules`. Host commands serve your IDE and `tsc`. Container commands affect the running app and the database.
+
+### 5. Before you push
+
+```bash
+npm run typecheck    # type errors
+npm run lint         # code quality
+docker compose exec -e NODE_ENV=production app npm run build  # full build
+```
+
+All three should pass before opening a PR.
+
+### 6. Schema changes
+
+When you edit `prisma/schema.prisma`, run all three steps:
+
+**Step 1 — Sync the database:**
+
+```bash
+# Empty database (fresh dev setup)
+docker compose exec app npx prisma db push
+
+# Database has data — generates a reviewed, versioned SQL migration
+docker compose exec app npx prisma migrate dev --name <short-description>
+```
+
+> `db push` is unsafe on a database with data — it can drop columns without warning. Use `migrate dev` any time the database has rows. Migration files land in `prisma/migrations/` and must be committed.
+
+**Step 2 — Regenerate Prisma client in the container** (so the running app sees the new types):
+
+```bash
+docker compose exec app npx prisma generate
+```
+
+**Step 3 — Regenerate Prisma client on the host** (so your IDE and `typecheck` see the new types):
+
+```bash
+npx prisma generate
+```
+
+### 7. Adding a new npm package
+
+```bash
+npm install <package>      # updates host node_modules (for IDE + typecheck)
+docker compose up --build  # rebuilds container so the running app picks it up
+```
+
+### 8. GitHub Actions secrets
 
 The CI and keep-alive workflows need these secrets added once in repo Settings → Secrets and variables → Actions:
 
@@ -68,15 +124,6 @@ The CI and keep-alive workflows need these secrets added once in repo Settings �
 | `NEXT_PUBLIC_SUPABASE_URL` | Same as `.env.local` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Same as `.env.local` |
 | `SUPABASE_SERVICE_ROLE_KEY` | Same as `.env.local` |
-
-### 6. Adding a new npm package
-
-```bash
-npm install <package>          # local (for IDE)
-docker compose up --build      # rebuild container
-```
-
-Both steps needed — local for autocomplete, rebuild so the container picks it up.
 
 ---
 
