@@ -18,14 +18,26 @@ const MAX_HISTORY_MESSAGES = 20;
 const LLM_ERROR_RESPONSE = "Sorry, I encountered an error processing your request. Please try again.";
 const LLM_AUTH_ERROR_RESPONSE = "Your API key is invalid or has been revoked. Please update it in Settings > API Keys.";
 
-function isAuthError(err: unknown): boolean {
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    "status" in err &&
-    (err as { status: number }).status === 401
-  );
+function getErrorStatus(err: unknown): number | null {
+  if (typeof err === "object" && err !== null && "status" in err) {
+    return (err as { status: number }).status;
+  }
+  return null;
 }
+
+function isAuthError(err: unknown): boolean {
+  return getErrorStatus(err) === 401;
+}
+
+function isRateLimitError(err: unknown): boolean {
+  return getErrorStatus(err) === 429;
+}
+
+function isModelUnavailableError(err: unknown): boolean {
+  const status = getErrorStatus(err);
+  return status === 502 || status === 503;
+}
+
 const MAX_MESSAGE_LENGTH = 1000;
 
 export async function POST(request: Request) {
@@ -232,7 +244,13 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("LLM call failed:", err);
 
-    const errorContent = isAuthError(err) ? LLM_AUTH_ERROR_RESPONSE : LLM_ERROR_RESPONSE;
+    const errorContent = isAuthError(err)
+      ? LLM_AUTH_ERROR_RESPONSE
+      : isRateLimitError(err)
+        ? "The model is currently rate limited. Please wait a moment and try again."
+        : isModelUnavailableError(err)
+          ? "The model is temporarily unavailable. Please try again shortly."
+          : LLM_ERROR_RESPONSE;
 
     // Save an error message so the user sees feedback
     const errorMessage = await getPrisma().message.create({

@@ -56,7 +56,7 @@ async function classifyOpenRouter(
     temperature: 0,
   });
 
-  return response.choices[0]?.message?.content ?? "INFRA";
+  return response.choices[0]?.message?.content ?? "REJECT";
 }
 
 async function classifyAnthropic(
@@ -75,5 +75,5 @@ async function classifyAnthropic(
   });
 
   const textBlock = response.content.find((b) => b.type === "text");
-  return textBlock?.text ?? "INFRA";
+  return textBlock?.text ?? "REJECT";
 }
