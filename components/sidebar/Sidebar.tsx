@@ -207,6 +207,9 @@ export default function Sidebar({ displayName, initials }: SidebarProps) {
 
   function handleDelete(id: string) {
     setSessions((prev) => prev.filter((s) => s.id !== id));
+    if (pathname === `/session/${id}`) {
+      router.push("/home");
+    }
   }
 
   useEffect(() => {
