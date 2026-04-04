@@ -63,9 +63,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | Command | When to run |
 |---|---|
 | `docker compose exec -e NODE_ENV=production app npm run build` | Before pushing — catches route/bundle errors that typecheck misses |
-| `docker compose exec app npx prisma db push` | After changing `schema.prisma` — **empty database only** (see Schema changes below) |
-| `docker compose exec app npx prisma migrate dev --name <description>` | After changing `schema.prisma` — **database has data** (see Schema changes below) |
-| `docker compose exec app npx prisma migrate deploy` | Production only — applies existing migration files |
+| `docker compose exec app npx prisma db push` | After changing `schema.prisma` — syncs schema to DB (see Schema changes below) |
 
 > The host and container have independent `node_modules`. Host commands serve your IDE and `tsc`. Container commands affect the running app and the database.
 
@@ -81,19 +79,17 @@ All three should pass before opening a PR.
 
 ### 6. Schema changes
 
+This project uses `prisma db push` for all schema changes — no migration history is maintained. `migrate dev` will fail because the DB was bootstrapped directly, not via Prisma migrations.
+
 When you edit `prisma/schema.prisma`, run all three steps:
 
 **Step 1 — Sync the database:**
 
 ```bash
-# Empty database (fresh dev setup)
 docker compose exec app npx prisma db push
-
-# Database has data — generates a reviewed, versioned SQL migration
-docker compose exec app npx prisma migrate dev --name <short-description>
 ```
 
-> `db push` is unsafe on a database with data — it can drop columns without warning. Use `migrate dev` any time the database has rows. Migration files land in `prisma/migrations/` and must be committed.
+> `db push` compares the schema file to the live DB and applies only the diff. It is safe for **additive changes** (new tables, new columns, new indexes). Avoid using it for renaming or removing columns — those are destructive and will drop data. For destructive changes, write the SQL manually and run it in the Supabase Dashboard SQL editor before running `db push`.
 
 **Step 2 — Rebuild the container** (so the running app sees the new types — `prisma generate` runs automatically during the build):
 
