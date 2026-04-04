@@ -137,38 +137,38 @@ export async function POST(request: Request) {
     resolved.provider,
   );
 
-  // Pre-filter: check if prompt is infrastructure-related
-  const guardrail = await checkPromptGuardrails(
-    message.trim(),
-    resolved.provider,
-    resolved.modelId,
-    apiKey,
-  );
-  if (!guardrail.allowed) {
-    const refusalContent = "I can only help with cloud infrastructure design. Could you describe the infrastructure you'd like to build?";
-    const refusalMessage = await getPrisma().message.create({
-      data: { sessionId, role: "assistant", content: refusalContent },
-    });
-    return NextResponse.json({
-      userMessage: {
-        id: userMessage.id,
-        role: userMessage.role,
-        content: userMessage.content,
-        createdAt: userMessage.createdAt.toISOString(),
-      },
-      assistantMessage: {
-        id: refusalMessage.id,
-        role: refusalMessage.role,
-        content: refusalMessage.content,
-        createdAt: refusalMessage.createdAt.toISOString(),
-      },
-      mermaidCode: null,
-      configYaml: null,
-      warnings: [],
-    });
-  }
-
   try {
+    // Pre-filter: check if prompt is infrastructure-related
+    const guardrail = await checkPromptGuardrails(
+      message.trim(),
+      resolved.provider,
+      resolved.modelId,
+      apiKey,
+    );
+    if (!guardrail.allowed) {
+      const refusalContent = "I can only help with cloud infrastructure design. Could you describe the infrastructure you'd like to build?";
+      const refusalMessage = await getPrisma().message.create({
+        data: { sessionId, role: "assistant", content: refusalContent },
+      });
+      return NextResponse.json({
+        userMessage: {
+          id: userMessage.id,
+          role: userMessage.role,
+          content: userMessage.content,
+          createdAt: userMessage.createdAt.toISOString(),
+        },
+        assistantMessage: {
+          id: refusalMessage.id,
+          role: refusalMessage.role,
+          content: refusalMessage.content,
+          createdAt: refusalMessage.createdAt.toISOString(),
+        },
+        mermaidCode: null,
+        configYaml: null,
+        warnings: [],
+      });
+    }
+
     // Call LLM
     const rawBlocks = await callLLM({
       provider: resolved.provider,
