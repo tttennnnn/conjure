@@ -18,10 +18,12 @@ const IAC_OPTIONS = [
 ];
 
 function modelTag(m: ModelOption): { label: string; className: string } | null {
-  if (m.id === "gemini-2.0-flash" || m.id === "gpt-4o-mini")
-    return { label: "Fast", className: "bg-[var(--success-bg)] text-[var(--success-text)]" };
+  if (m.id === "nemotron-super-120b")
+    return { label: "Recommended", className: "bg-[var(--info-bg)] text-[var(--info-text)]" };
   if (m.id === "llama-3.3-70b")
-    return { label: "Free", className: "bg-[var(--success-bg)] text-[var(--success-text)]" };
+    return { label: "Fast", className: "bg-[var(--success-bg)] text-[var(--success-text)]" };
+  if (m.id === "qwen3-coder")
+    return { label: "Code", className: "bg-[var(--success-bg)] text-[var(--success-text)]" };
   if (m.id === "claude-haiku")
     return { label: "Fast", className: "bg-[var(--success-bg)] text-[var(--success-text)]" };
   if (m.id === "claude-sonnet")
@@ -53,7 +55,7 @@ export default function NewSessionPage() {
   const router = useRouter();
   const [targetEnv, setTargetEnv] = useState<"aws" | "gcp">("aws");
   const [iacTool, setIacTool] = useState<IacTool>("terraform");
-  const [selectedModel, setSelectedModel] = useState("gemini-2.0-flash");
+  const [selectedModel, setSelectedModel] = useState("nemotron-super-120b");
   const [models, setModels] = useState<ModelOption[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);

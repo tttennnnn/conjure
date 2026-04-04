@@ -15,11 +15,11 @@ export interface ModelOption {
 
 const MODELS: ModelOption[] = [
   {
-    id: "gemini-2.0-flash",
-    name: "Gemini 2.0 Flash",
+    id: "nemotron-super-120b",
+    name: "Nemotron Super 120B",
     provider: "openrouter",
     tier: "free",
-    openRouterId: "google/gemini-2.0-flash-exp:free",
+    openRouterId: "nvidia/nemotron-3-super-120b-a12b:free",
   },
   {
     id: "llama-3.3-70b",
@@ -29,11 +29,11 @@ const MODELS: ModelOption[] = [
     openRouterId: "meta-llama/llama-3.3-70b-instruct:free",
   },
   {
-    id: "gpt-4o-mini",
-    name: "GPT-4o mini",
+    id: "qwen3-coder",
+    name: "Qwen3 Coder",
     provider: "openrouter",
     tier: "free",
-    openRouterId: "openai/gpt-4o-mini",
+    openRouterId: "qwen/qwen3-coder:free",
   },
   {
     id: "claude-haiku",
