@@ -12,6 +12,13 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   createdAt: string;
+  diagramUpdated?: boolean;
+}
+
+export interface ChatEvent {
+  id: string;
+  kind: "diagram-edit" | "config-edit";
+  createdAt: string;
 }
 
 interface SessionData {
@@ -34,7 +41,7 @@ interface SessionViewProps {
 
 export default function SessionView({ session, initialMessages }: SessionViewProps) {
   const [sessionName, setSessionName] = useState(session.name);
-  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
+  const [messages, setMessages] = useState<(ChatMessage | ChatEvent)[]>(initialMessages);
   const [mermaidCode, setMermaidCode] = useState(session.mermaidCode);
   const [configYaml, setConfigYaml] = useState(session.configYaml);
   const [isLoading, setIsLoading] = useState(false);
@@ -141,6 +148,10 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
     (newMermaidCode: string) => {
       setMermaidCode(newMermaidCode);
       if (iacCode) setIacStale(true);
+      setMessages((prev) => [
+        ...prev,
+        { id: `edit-${Date.now()}`, kind: "diagram-edit" as const, createdAt: new Date().toISOString() },
+      ]);
     },
     [iacCode],
   );
@@ -222,6 +233,10 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
                 onSaved={(newYaml, newIacStale) => {
                   setConfigYaml(newYaml);
                   if (newIacStale) setIacStale(true);
+                  setMessages((prev) => [
+                    ...prev,
+                    { id: `props-${Date.now()}`, kind: "config-edit" as const, createdAt: new Date().toISOString() },
+                  ]);
                 }}
               />
             )}

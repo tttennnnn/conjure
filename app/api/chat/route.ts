@@ -205,6 +205,7 @@ export async function POST(request: Request) {
         sessionId,
         role: "assistant",
         content: assistantContent,
+        diagramUpdated: !!(result.mermaid || result.configYaml),
       },
     });
 
@@ -236,6 +237,7 @@ export async function POST(request: Request) {
         role: assistantMessage.role,
         content: assistantMessage.content,
         createdAt: assistantMessage.createdAt.toISOString(),
+        diagramUpdated: assistantMessage.diagramUpdated,
       },
       mermaidCode: result.mermaid,
       configYaml: result.configYaml,

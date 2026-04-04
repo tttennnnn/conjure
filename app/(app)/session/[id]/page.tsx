@@ -54,6 +54,7 @@ export default async function SessionPage({
         role: m.role as "user" | "assistant",
         content: m.content,
         createdAt: m.createdAt.toISOString(),
+        diagramUpdated: m.diagramUpdated,
       }))}
     />
   );

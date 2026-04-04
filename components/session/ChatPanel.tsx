@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { ChatMessage } from "./SessionView";
+import type { ChatMessage, ChatEvent } from "./SessionView";
 
 interface ChatPanelProps {
-  messages: ChatMessage[];
+  messages: (ChatMessage | ChatEvent)[];
   isLoading: boolean;
 }
 
@@ -27,24 +27,44 @@ export default function ChatPanel({ messages, isLoading }: ChatPanelProps) {
         </div>
       )}
 
-      {messages.map((msg) => (
-        <div
-          key={msg.id}
-          className={`flex flex-col gap-0.5 ${
-            msg.role === "user" ? "items-end" : "items-start"
-          }`}
-        >
+      {messages.map((item) => {
+        if ("kind" in item) {
+          const label = item.kind === "diagram-edit"
+            ? "✏ Diagram edited manually"
+            : "✏ Config updated via properties panel";
+          return (
+            <div key={item.id} className="flex items-center gap-2 py-0.5">
+              <div className="h-px flex-1 bg-[var(--border)]" />
+              <span className="text-[10px] text-[var(--hint)]">{label}</span>
+              <div className="h-px flex-1 bg-[var(--border)]" />
+            </div>
+          );
+        }
+
+        return (
           <div
-            className={`max-w-[220px] px-2.5 py-[7px] text-[11px] leading-relaxed whitespace-pre-wrap ${
-              msg.role === "user"
-                ? "rounded-[10px_10px_2px_10px] bg-[var(--text)] text-white"
-                : "rounded-[10px_10px_10px_2px] bg-[var(--surface2)] text-[var(--text)]"
+            key={item.id}
+            className={`flex flex-col gap-1 ${
+              item.role === "user" ? "items-end" : "items-start"
             }`}
           >
-            {msg.content}
+            <div
+              className={`max-w-[220px] px-2.5 py-[7px] text-[11px] leading-relaxed whitespace-pre-wrap ${
+                item.role === "user"
+                  ? "rounded-[10px_10px_2px_10px] bg-[var(--text)] text-white"
+                  : "rounded-[10px_10px_10px_2px] bg-[var(--surface2)] text-[var(--text)]"
+              }`}
+            >
+              {item.content}
+            </div>
+            {item.diagramUpdated && (
+              <div className="inline-flex items-center gap-1 rounded-[5px] bg-[var(--purple-bg)] px-2 py-[3px] text-[10px] font-medium text-[var(--purple-text)]">
+                ↗ Diagram updated
+              </div>
+            )}
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       {isLoading && (
         <div className="flex flex-col items-start gap-0.5">
