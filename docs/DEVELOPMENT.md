@@ -63,7 +63,6 @@ Open [http://localhost:3000](http://localhost:3000).
 | Command | When to run |
 |---|---|
 | `docker compose exec -e NODE_ENV=production app npm run build` | Before pushing — catches route/bundle errors that typecheck misses |
-| `docker compose exec app npx prisma generate` | After changing `schema.prisma` |
 | `docker compose exec app npx prisma db push` | After changing `schema.prisma` — **empty database only** (see Schema changes below) |
 | `docker compose exec app npx prisma migrate dev --name <description>` | After changing `schema.prisma` — **database has data** (see Schema changes below) |
 | `docker compose exec app npx prisma migrate deploy` | Production only — applies existing migration files |
@@ -96,10 +95,10 @@ docker compose exec app npx prisma migrate dev --name <short-description>
 
 > `db push` is unsafe on a database with data — it can drop columns without warning. Use `migrate dev` any time the database has rows. Migration files land in `prisma/migrations/` and must be committed.
 
-**Step 2 — Regenerate Prisma client in the container** (so the running app sees the new types):
+**Step 2 — Rebuild the container** (so the running app sees the new types — `prisma generate` runs automatically during the build):
 
 ```bash
-docker compose exec app npx prisma generate
+docker compose up --build
 ```
 
 **Step 3 — Regenerate Prisma client on the host** (so your IDE and `typecheck` see the new types):
@@ -238,7 +237,7 @@ Chat → Diagram/Config update → [stale banner] → Regenerate → Deploy
 
 - **Plan error:** block apply, show error inline in Deploy tab, offer "Chat to fix" which focuses the chat input with the error pre-filled
 - **Apply error:** set status `deploy_failed`, stream the full output, show which resources failed, offer retry (re-running apply is safe — Terraform only creates what's missing) and "Chat to fix"
-- **Post-deploy chat changes:** any Mermaid or Config change after a successful deploy sets `terraform_stale = true`; plan/apply are disabled in the Deploy tab until code is regenerated
+- **Post-deploy chat changes:** any Mermaid or Config change after a successful deploy sets `iac_stale = true`; plan/apply are disabled in the Deploy tab until code is regenerated
 - **Never auto-destroy:** `terraform destroy` is never run automatically on failure
 
 The chat panel is always visible and never disabled by deploy status. Users can chat-to-fix directly from the Deploy tab without switching screens.

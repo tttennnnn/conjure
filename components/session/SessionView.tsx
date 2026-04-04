@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import ChatPanel from "./ChatPanel";
 import ChatInput from "./ChatInput";
 import DiagramPanel from "./DiagramPanel";
@@ -33,6 +33,7 @@ interface SessionViewProps {
 }
 
 export default function SessionView({ session, initialMessages }: SessionViewProps) {
+  const [sessionName, setSessionName] = useState(session.name);
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [mermaidCode, setMermaidCode] = useState(session.mermaidCode);
   const [configYaml, setConfigYaml] = useState(session.configYaml);
@@ -42,6 +43,14 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState<"diagram" | "code">("diagram");
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+
+  useEffect(() => {
+    function onRenamed(e: CustomEvent<{ id: string; name: string }>) {
+      if (e.detail.id === session.id) setSessionName(e.detail.name);
+    }
+    window.addEventListener("session-renamed", onRenamed as EventListener);
+    return () => window.removeEventListener("session-renamed", onRenamed as EventListener);
+  }, [session.id]);
 
   const handleSendMessage = useCallback(
     async (content: string) => {
@@ -140,7 +149,7 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Topbar */}
       <div className="flex h-10 shrink-0 items-center justify-between border-b border-[var(--border)] bg-[var(--surface)] px-3.5">
-        <span className="text-xs font-semibold">{session.name}</span>
+        <span className="text-xs font-semibold">{sessionName}</span>
         <div className="flex gap-1.5">
           <span className="rounded border border-[var(--border)] bg-[var(--surface2)] px-1.5 py-0.5 text-[10px] text-[var(--muted)]">
             {session.targetEnv.toUpperCase()}

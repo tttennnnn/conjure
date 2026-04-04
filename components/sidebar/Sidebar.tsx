@@ -14,6 +14,119 @@ interface SessionItem {
   createdAt: string;
 }
 
+function SessionRow({
+  s,
+  isActive,
+  onRename,
+  onDelete,
+}: {
+  s: SessionItem;
+  isActive: boolean;
+  onRename: (id: string, name: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(s.name);
+  const [hovered, setHovered] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function startEdit(e: React.MouseEvent) {
+    e.preventDefault();
+    setDraft(s.name);
+    setEditing(true);
+    setTimeout(() => inputRef.current?.select(), 0);
+  }
+
+  async function commit() {
+    setEditing(false);
+    const trimmed = draft.trim();
+    if (!trimmed || trimmed === s.name) return;
+    try {
+      await fetch(`/api/sessions/${s.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: trimmed }),
+      });
+      onRename(s.id, trimmed);
+    } catch {
+      // Silently revert -- name stays as-is in next fetch
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter") commit();
+    if (e.key === "Escape") setEditing(false);
+  }
+
+  async function handleDelete(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm("Delete this session? This cannot be undone.")) return;
+    try {
+      await fetch(`/api/sessions/${s.id}`, { method: "DELETE" });
+      onDelete(s.id);
+    } catch {
+      // Silently fail
+    }
+  }
+
+  return (
+    <Link
+      href={`/session/${s.id}`}
+      className={`group mb-px flex flex-col gap-0.5 rounded-md px-[7px] py-1.5 transition-colors ${
+        isActive ? "bg-[var(--surface2)]" : "hover:bg-[var(--surface2)]"
+      }`}
+      onClick={editing ? (e) => e.preventDefault() : undefined}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div className="flex items-center gap-1">
+        {editing ? (
+          <input
+            ref={inputRef}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={handleKeyDown}
+            onClick={(e) => e.preventDefault()}
+            className="min-w-0 flex-1 truncate rounded bg-[var(--surface)] px-1 text-[11px] font-medium outline outline-1 outline-[var(--border2)]"
+            maxLength={100}
+            autoFocus
+          />
+        ) : (
+          <div
+            className="min-w-0 flex-1 truncate text-[11px] font-medium"
+            onDoubleClick={startEdit}
+            title="Double-click to rename"
+          >
+            {s.name}
+          </div>
+        )}
+        {!editing && hovered && (
+          <button
+            onClick={handleDelete}
+            className="shrink-0 rounded p-px text-[var(--hint)] transition-colors hover:text-[var(--danger-text)]"
+            title="Delete session"
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+              <path d="M10 11v6M14 11v6" />
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+            </svg>
+          </button>
+        )}
+      </div>
+      <div className="flex items-center gap-1">
+        <span className={`rounded-[3px] px-1.5 py-px text-[9px] font-medium capitalize ${STATUS_PILL[s.status] ?? STATUS_PILL.active}`}>
+          {s.status}
+        </span>
+        <span className="text-[9px] text-[var(--hint)]">{relativeTime(s.createdAt)}</span>
+      </div>
+    </Link>
+  );
+}
+
 interface SidebarProps {
   displayName: string;
   initials: string;
@@ -86,6 +199,15 @@ export default function Sidebar({ displayName, initials }: SidebarProps) {
       // Silently fail -- sidebar still works
     }
   }, []);
+
+  function handleRename(id: string, name: string) {
+    setSessions((prev) => prev.map((s) => (s.id === id ? { ...s, name } : s)));
+    window.dispatchEvent(new CustomEvent("session-renamed", { detail: { id, name } }));
+  }
+
+  function handleDelete(id: string) {
+    setSessions((prev) => prev.filter((s) => s.id !== id));
+  }
 
   useEffect(() => {
     fetchSessions();
@@ -228,26 +350,15 @@ export default function Sidebar({ displayName, initials }: SidebarProps) {
                   <div className="px-1.5 pt-2 pb-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--hint)]">
                     {group.label}
                   </div>
-                  {group.items.map((s) => {
-                    const isActive = pathname === `/session/${s.id}`;
-                    return (
-                      <Link
-                        key={s.id}
-                        href={`/session/${s.id}`}
-                        className={`mb-px flex flex-col gap-0.5 rounded-md px-[7px] py-1.5 transition-colors ${
-                          isActive ? "bg-[var(--surface2)]" : "hover:bg-[var(--surface2)]"
-                        }`}
-                      >
-                        <div className="truncate text-[11px] font-medium">{s.name}</div>
-                        <div className="flex items-center gap-1">
-                          <span className={`rounded-[3px] px-1.5 py-px text-[9px] font-medium capitalize ${STATUS_PILL[s.status] ?? STATUS_PILL.active}`}>
-                            {s.status}
-                          </span>
-                          <span className="text-[9px] text-[var(--hint)]">{relativeTime(s.createdAt)}</span>
-                        </div>
-                      </Link>
-                    );
-                  })}
+                  {group.items.map((s) => (
+                    <SessionRow
+                      key={s.id}
+                      s={s}
+                      isActive={pathname === `/session/${s.id}`}
+                      onRename={handleRename}
+                      onDelete={handleDelete}
+                    />
+                  ))}
                 </div>
               ))}
             </div>
