@@ -11,12 +11,15 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
+    "@prisma/adapter-pg": "^7.6.0",
     "@prisma/client": "^7.5.0",
     "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.99.3",
+    "@types/pg": "^8.20.0",
     "mermaid": "^11.13.0",
     "next": "^15.5.14",
     "openai": "^6.32.0",
+    "pg": "^8.20.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "yaml": "^2.8.3"

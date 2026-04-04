@@ -10,21 +10,21 @@ datasource db {
 }
 
 model Session {
-  id             String   @id @default(uuid()) @db.Uuid
-  userId         String   @map("user_id") @db.Uuid
-  name           String
-  targetEnv      String   @map("target_env")
-  iacTool        String   @map("iac_tool")
-  model          String
-  mermaidCode    String   @default("") @map("mermaid_code")
-  configYaml     String   @default("") @map("config_yaml")
-  iacCode        Json?    @map("iac_code")
-  iacStale       Boolean  @default(false) @map("iac_stale")
-  githubRepo     String?  @map("github_repo")
-  status         String   @default("active")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-  messages       Message[]
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  name        String
+  targetEnv   String    @map("target_env")
+  iacTool     String    @map("iac_tool")
+  model       String
+  mermaidCode String    @default("") @map("mermaid_code")
+  configYaml  String    @default("") @map("config_yaml")
+  githubRepo  String?   @map("github_repo")
+  status      String    @default("active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  iacCode     Json?     @map("iac_code")
+  iacStale    Boolean   @default(false) @map("iac_stale")
+  messages    Message[]
 
   @@map("sessions")
 }
@@ -32,7 +32,7 @@ model Session {
 model Message {
   id        String   @id @default(uuid()) @db.Uuid
   sessionId String   @map("session_id") @db.Uuid
-  role      String   // "user" | "assistant"
+  role      String
   content   String
   createdAt DateTime @default(now()) @map("created_at")
   session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
