@@ -36,17 +36,14 @@ function modelTag(m: ModelOption): { label: string; className: string } | null {
 function groupModels(
   models: ModelOption[],
 ): { label: string; hint: string; models: ModelOption[] }[] {
-  const free = models.filter((m) => m.provider === "openrouter" && m.tier === "free");
+  const free = models.filter((m) => m.provider === "openrouter");
   const anthropic = models.filter((m) => m.provider === "anthropic");
-  const premiumOr = models.filter((m) => m.provider === "openrouter" && m.tier === "premium");
 
   const groups: { label: string; hint: string; models: ModelOption[] }[] = [];
   if (free.length > 0)
     groups.push({ label: "Built-in", hint: "Free, powered by OpenRouter", models: free });
   if (anthropic.length > 0)
     groups.push({ label: "Anthropic", hint: "Uses your API key", models: anthropic });
-  if (premiumOr.length > 0)
-    groups.push({ label: "OpenRouter", hint: "Uses your API key", models: premiumOr });
 
   return groups;
 }
@@ -65,12 +62,11 @@ export default function NewSessionPage() {
       try {
         const res = await fetch("/api/api-keys");
         const keys: { provider: string }[] = res.ok ? await res.json() : [];
-        const hasOpenRouter = keys.some((k) => k.provider === "openrouter");
         const hasAnthropic = keys.some((k) => k.provider === "anthropic");
-        setModels(getAvailableModels(hasOpenRouter, hasAnthropic));
+        setModels(getAvailableModels({ anthropic: hasAnthropic }));
       } catch {
         // Fallback to free models only
-        setModels(getAvailableModels(false, false));
+        setModels(getAvailableModels({}));
       }
     }
     loadModels();

@@ -67,7 +67,7 @@ export async function POST(request: Request) {
 
   if (!isValidProvider(provider)) {
     return NextResponse.json(
-      { error: 'provider must be "openrouter" or "anthropic"' },
+      { error: 'provider must be "anthropic"' },
       { status: 400 },
     );
   }
@@ -109,7 +109,7 @@ export async function DELETE(request: Request) {
 
   if (!provider || !isValidProvider(provider)) {
     return NextResponse.json(
-      { error: 'provider query param must be "openrouter" or "anthropic"' },
+      { error: 'provider query param must be "anthropic"' },
       { status: 400 },
     );
   }

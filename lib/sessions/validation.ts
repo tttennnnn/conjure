@@ -56,15 +56,19 @@ const MODELS: ModelOption[] = [
   },
 ];
 
-export function getAvailableModels(
-  hasOpenRouterKey: boolean,
-  hasAnthropicKey: boolean,
-): ModelOption[] {
+// Keys that require BYOK — free-tier OpenRouter models are always available without a key.
+// To add a new BYOK provider, add it here: premium models for that provider will unlock
+// when the user's key is present.
+const BYOK_PROVIDERS = new Set<string>(["anthropic"]);
+
+export function getAvailableModels(userKeys: Partial<Record<string, boolean>>): ModelOption[] {
   return MODELS.filter((m) => {
-    if (m.provider === "anthropic") return hasAnthropicKey;
-    // Free OpenRouter models are always available; premium ones need a key
+    // Models from BYOK-only providers require the user's key
+    if (BYOK_PROVIDERS.has(m.provider)) return !!userKeys[m.provider];
+    // Free-tier OpenRouter models are always available
     if (m.tier === "free") return true;
-    return hasOpenRouterKey;
+    // Premium non-BYOK models would require their own flag here
+    return !!userKeys[m.provider];
   });
 }
 
@@ -98,15 +102,9 @@ export function isValidGithubRepo(repo: string): boolean {
   return repo.length <= 200 && GITHUB_REPO_PATTERN.test(repo);
 }
 
-/** Returns true if the model ID is not in the built-in list (i.e. a custom OpenRouter model). */
-export function isCustomOpenRouterModel(id: string): boolean {
-  return !MODELS.some((m) => m.id === id);
-}
-
 /**
  * Resolve the actual API model ID for a given session model string.
- * For built-in models, returns the provider-specific ID (openRouterId or anthropicId).
- * For custom models, the session model string IS the OpenRouter model ID.
+ * Returns null if the model ID is not in the built-in list.
  */
 export function resolveModelId(sessionModel: string): {
   modelId: string;
@@ -114,13 +112,10 @@ export function resolveModelId(sessionModel: string): {
   disableReasoning: boolean;
 } | null {
   const builtIn = getModelById(sessionModel);
-  if (builtIn) {
-    const modelId = builtIn.provider === "anthropic"
-      ? builtIn.anthropicId
-      : builtIn.openRouterId;
-    if (!modelId) return null;
-    return { modelId, provider: builtIn.provider, disableReasoning: builtIn.disableReasoning ?? false };
-  }
-  // Custom model -- always OpenRouter
-  return { modelId: sessionModel, provider: "openrouter", disableReasoning: false };
+  if (!builtIn) return null;
+  const modelId = builtIn.provider === "anthropic"
+    ? builtIn.anthropicId
+    : builtIn.openRouterId;
+  if (!modelId) return null;
+  return { modelId, provider: builtIn.provider, disableReasoning: builtIn.disableReasoning ?? false };
 }

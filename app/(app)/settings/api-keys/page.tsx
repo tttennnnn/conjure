@@ -66,7 +66,6 @@ export default function ApiKeysPage() {
     return (
       <div className="space-y-4">
         <div className="h-40 animate-pulse rounded-[var(--radius-lg)] bg-[var(--surface2)]" />
-        <div className="h-40 animate-pulse rounded-[var(--radius-lg)] bg-[var(--surface2)]" />
       </div>
     );
   }
@@ -76,19 +75,10 @@ export default function ApiKeysPage() {
       <div>
         <h2 className="text-lg font-semibold">LLM API Keys</h2>
         <p className="mt-1 text-sm text-[var(--muted)]">
-          Add your own API keys to unlock additional models. Keys are encrypted
+          Add your Anthropic API key to unlock Claude models. Keys are encrypted
           and stored securely.
         </p>
       </div>
-
-      <ApiKeyCard
-        provider="openrouter"
-        label="OpenRouter"
-        description="Provide your own key to unlock all OpenRouter models"
-        keyHint={getKeyHint("openrouter")}
-        onSave={(key) => handleSave("openrouter", key)}
-        onRemove={() => handleRemove("openrouter")}
-      />
 
       <ApiKeyCard
         provider="anthropic"

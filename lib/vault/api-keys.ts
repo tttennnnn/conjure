@@ -1,11 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import { getPrisma } from "@/lib/prisma";
 
-const VALID_PROVIDERS = ["openrouter", "anthropic"] as const;
-type Provider = (typeof VALID_PROVIDERS)[number];
+const VALID_PROVIDERS = ["anthropic"] as const;
+export type Provider = (typeof VALID_PROVIDERS)[number];
 
 const KEY_PREFIXES: Record<Provider, string> = {
-  openrouter: "sk-or-",
   anthropic: "sk-ant-",
 };
 

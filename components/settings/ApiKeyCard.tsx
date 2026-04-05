@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 interface ApiKeyCardProps {
-  provider: "openrouter" | "anthropic";
+  provider: string;
   label: string;
   description: string;
   keyHint: string | null;
@@ -117,7 +117,7 @@ export default function ApiKeyCard({
               type="password"
               value={keyInput}
               onChange={(e) => setKeyInput(e.target.value)}
-              placeholder={`Paste your ${provider === "openrouter" ? "OpenRouter" : "Anthropic"} API key`}
+              placeholder={`Paste your ${label} API key`}
               className="flex-1 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 font-[family-name:var(--font-mono)] text-sm outline-none transition-colors placeholder:text-[var(--hint)] focus:border-[var(--border2)]"
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleSave();

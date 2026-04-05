@@ -108,11 +108,7 @@ export async function POST(request: Request) {
       );
     }
   } else {
-    // Try user's OpenRouter key, fall back to app key
-    apiKey = await getApiKey(userId, "openrouter");
-    if (!apiKey) {
-      apiKey = process.env.OPENROUTER_API_KEY ?? null;
-    }
+    apiKey = process.env.OPENROUTER_API_KEY ?? null;
     if (!apiKey) {
       return NextResponse.json(
         { error: "No OpenRouter API key configured" },
