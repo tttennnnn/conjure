@@ -95,7 +95,6 @@ export default function NewSessionPage() {
       router.push(`/session/${session.id}`);
     } catch {
       setError("Failed to create session");
-    } finally {
       setSubmitting(false);
     }
   }
@@ -174,7 +173,7 @@ export default function NewSessionPage() {
           <div className="rounded-[5px] bg-[var(--warn-bg)] px-2.5 py-1.5 text-[10px] text-[var(--warn-text)]">
             ⚠ GitHub not connected.{" "}
             <button
-              onClick={() => router.push("/settings/api-keys")}
+              onClick={() => router.push("/settings/github")}
               className="cursor-pointer font-medium underline"
             >
               Connect in Settings
