@@ -17,46 +17,13 @@ interface SessionItem {
 function SessionRow({
   s,
   isActive,
-  onRename,
   onDelete,
 }: {
   s: SessionItem;
   isActive: boolean;
-  onRename: (id: string, name: string) => void;
   onDelete: (id: string) => void;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(s.name);
   const [hovered, setHovered] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  function startEdit(e: React.MouseEvent) {
-    e.preventDefault();
-    setDraft(s.name);
-    setEditing(true);
-    setTimeout(() => inputRef.current?.select(), 0);
-  }
-
-  async function commit() {
-    setEditing(false);
-    const trimmed = draft.trim();
-    if (!trimmed || trimmed === s.name) return;
-    try {
-      await fetch(`/api/sessions/${s.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: trimmed }),
-      });
-      onRename(s.id, trimmed);
-    } catch {
-      // Silently revert -- name stays as-is in next fetch
-    }
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === "Enter") commit();
-    if (e.key === "Escape") setEditing(false);
-  }
 
   async function handleDelete(e: React.MouseEvent) {
     e.preventDefault();
@@ -76,33 +43,14 @@ function SessionRow({
       className={`group mb-px flex flex-col gap-0.5 rounded-md px-[7px] py-1.5 transition-colors ${
         isActive ? "bg-[var(--surface2)]" : "hover:bg-[var(--surface2)]"
       }`}
-      onClick={editing ? (e) => e.preventDefault() : undefined}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       <div className="flex items-center gap-1">
-        {editing ? (
-          <input
-            ref={inputRef}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={commit}
-            onKeyDown={handleKeyDown}
-            onClick={(e) => e.preventDefault()}
-            className="min-w-0 flex-1 truncate rounded bg-[var(--surface)] px-1 text-[11px] font-medium outline outline-1 outline-[var(--border2)]"
-            maxLength={100}
-            autoFocus
-          />
-        ) : (
-          <div
-            className="min-w-0 flex-1 truncate text-[11px] font-medium"
-            onDoubleClick={startEdit}
-            title="Double-click to rename"
-          >
-            {s.name}
-          </div>
-        )}
-        {!editing && hovered && (
+        <div className="min-w-0 flex-1 truncate text-[11px] font-medium">
+          {s.name}
+        </div>
+        {hovered && (
           <button
             onClick={handleDelete}
             className="shrink-0 rounded p-px text-[var(--hint)] transition-colors hover:text-[var(--danger-text)]"
@@ -200,21 +148,28 @@ export default function Sidebar({ displayName, initials }: SidebarProps) {
     }
   }, []);
 
-  function handleRename(id: string, name: string) {
-    setSessions((prev) => prev.map((s) => (s.id === id ? { ...s, name } : s)));
-    window.dispatchEvent(new CustomEvent("session-renamed", { detail: { id, name } }));
-  }
-
-  function handleDelete(id: string) {
-    setSessions((prev) => prev.filter((s) => s.id !== id));
+  async function handleDelete(id: string) {
     if (pathname === `/session/${id}`) {
+      // Update sidebar first so it reflects the deletion before navigation clears the main panel.
+      await fetchSessions();
       router.push("/home");
+    } else {
+      fetchSessions();
     }
   }
 
   useEffect(() => {
     fetchSessions();
   }, [fetchSessions, pathname]);
+
+  // Sync sidebar when session is renamed from topbar
+  useEffect(() => {
+    function onRenamed(e: CustomEvent<{ id: string; name: string }>) {
+      setSessions((prev) => prev.map((s) => (s.id === e.detail.id ? { ...s, name: e.detail.name } : s)));
+    }
+    window.addEventListener("session-renamed", onRenamed as EventListener);
+    return () => window.removeEventListener("session-renamed", onRenamed as EventListener);
+  }, []);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -358,7 +313,6 @@ export default function Sidebar({ displayName, initials }: SidebarProps) {
                       key={s.id}
                       s={s}
                       isActive={pathname === `/session/${s.id}`}
-                      onRename={handleRename}
                       onDelete={handleDelete}
                     />
                   ))}

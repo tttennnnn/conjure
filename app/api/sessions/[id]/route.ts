@@ -46,17 +46,17 @@ export async function PATCH(
 
   const { id } = await params;
 
-  let body: { configYaml?: unknown; name?: unknown };
+  let body: { configYaml?: unknown; name?: unknown; mermaidCode?: unknown };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { configYaml, name } = body;
+  const { configYaml, name, mermaidCode } = body;
 
-  if (configYaml === undefined && name === undefined) {
-    return NextResponse.json({ error: "Provide configYaml or name" }, { status: 400 });
+  if (configYaml === undefined && name === undefined && mermaidCode === undefined) {
+    return NextResponse.json({ error: "Provide configYaml, name, or mermaidCode" }, { status: 400 });
   }
 
   const session = await getPrisma().session.findUnique({ where: { id } });
@@ -92,9 +92,37 @@ export async function PATCH(
     if (session.iacCode) updateData.iacStale = true;
   }
 
-  const updated = await getPrisma().session.update({ where: { id }, data: updateData });
+  if (mermaidCode !== undefined) {
+    if (typeof mermaidCode !== "string" || mermaidCode.trim().length === 0) {
+      return NextResponse.json({ error: "mermaidCode must be a non-empty string" }, { status: 400 });
+    }
+    updateData.mermaidCode = mermaidCode;
+    if (session.iacCode) updateData.iacStale = true;
+  }
 
-  return NextResponse.json({ name: updated.name, configYaml: updated.configYaml, iacStale: updated.iacStale });
+  const prisma = getPrisma();
+  const updated = await prisma.session.update({ where: { id }, data: updateData });
+
+  // When mermaidCode is saved via manual edit, persist a Message record
+  let editMessage = null;
+  if (mermaidCode !== undefined) {
+    editMessage = await prisma.message.create({
+      data: {
+        sessionId: id,
+        role: "user",
+        content: "Edited diagram via edit mode",
+        diagramUpdated: true,
+      },
+    });
+  }
+
+  return NextResponse.json({
+    name: updated.name,
+    configYaml: updated.configYaml,
+    mermaidCode: updated.mermaidCode,
+    iacStale: updated.iacStale,
+    editMessage,
+  });
 }
 
 export async function DELETE(

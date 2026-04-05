@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import ChatPanel from "./ChatPanel";
 import ChatInput from "./ChatInput";
 import DiagramPanel from "./DiagramPanel";
@@ -17,7 +17,7 @@ export interface ChatMessage {
 
 export interface ChatEvent {
   id: string;
-  kind: "diagram-edit" | "config-edit";
+  kind: "config-edit";
   createdAt: string;
 }
 
@@ -50,6 +50,9 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState<"diagram" | "code">("diagram");
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameDraft, setRenameDraft] = useState(sessionName);
+  const renameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     function onRenamed(e: CustomEvent<{ id: string; name: string }>) {
@@ -58,6 +61,32 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
     window.addEventListener("session-renamed", onRenamed as EventListener);
     return () => window.removeEventListener("session-renamed", onRenamed as EventListener);
   }, [session.id]);
+
+  const startRenaming = useCallback(() => {
+    setRenameDraft(sessionName);
+    setIsRenaming(true);
+    setTimeout(() => renameInputRef.current?.select(), 0);
+  }, [sessionName]);
+
+  const commitRename = useCallback(async () => {
+    setIsRenaming(false);
+    const trimmed = renameDraft.trim();
+    if (!trimmed || trimmed === sessionName) return;
+
+    try {
+      await fetch(`/api/sessions/${session.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: trimmed }),
+      });
+      setSessionName(trimmed);
+      window.dispatchEvent(
+        new CustomEvent("session-renamed", { detail: { id: session.id, name: trimmed } }),
+      );
+    } catch {
+      // name stays unchanged in both topbar and sidebar
+    }
+  }, [renameDraft, sessionName, session.id]);
 
   const handleSendMessage = useCallback(
     async (content: string) => {
@@ -145,22 +174,75 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
   }, [session.id]);
 
   const handleEditSave = useCallback(
-    (newMermaidCode: string) => {
+    async (newMermaidCode: string) => {
       setMermaidCode(newMermaidCode);
       if (iacCode) setIacStale(true);
-      setMessages((prev) => [
-        ...prev,
-        { id: `edit-${Date.now()}`, kind: "diagram-edit" as const, createdAt: new Date().toISOString() },
-      ]);
+
+      try {
+        const res = await fetch(`/api/sessions/${session.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mermaidCode: newMermaidCode }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.editMessage) {
+            setMessages((prev) => [...prev, data.editMessage]);
+          }
+          if (data.iacStale) setIacStale(true);
+        }
+      } catch {
+        // Local state already updated; server sync failed silently
+      }
     },
-    [iacCode],
+    [session.id, iacCode],
   );
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Topbar */}
       <div className="flex h-10 shrink-0 items-center justify-between border-b border-[var(--border)] bg-[var(--surface)] px-3.5">
-        <span className="text-xs font-semibold">{sessionName}</span>
+        <div className="flex items-center gap-1.5">
+          {isRenaming ? (
+            <>
+              <input
+                ref={renameInputRef}
+                value={renameDraft}
+                onChange={(e) => setRenameDraft(e.target.value)}
+                onBlur={commitRename}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commitRename();
+                  if (e.key === "Escape") setIsRenaming(false);
+                }}
+                className="h-6 w-48 rounded border border-[var(--border)] bg-[var(--surface2)] px-1.5 text-xs font-semibold outline-none focus:border-[var(--text)]"
+                maxLength={100}
+              />
+              <button
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={commitRename}
+                className="flex h-5 w-5 cursor-pointer items-center justify-center rounded text-[var(--muted)] transition-colors hover:bg-[var(--surface2)] hover:text-[var(--text)]"
+                title="Save"
+              >
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="2 8 6 12 14 4" />
+                </svg>
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="text-xs font-semibold">{sessionName}</span>
+              <button
+                onClick={startRenaming}
+                className="flex h-5 w-5 cursor-pointer items-center justify-center rounded text-[var(--muted)] transition-colors hover:bg-[var(--surface2)] hover:text-[var(--text)]"
+                title="Rename session"
+              >
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11.5 1.5l3 3L5 14H2v-3L11.5 1.5z" />
+                </svg>
+              </button>
+            </>
+          )}
+        </div>
         <div className="flex gap-1.5">
           <span className="rounded border border-[var(--border)] bg-[var(--surface2)] px-1.5 py-0.5 text-[10px] text-[var(--muted)]">
             {session.targetEnv.toUpperCase()}
