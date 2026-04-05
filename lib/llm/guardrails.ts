@@ -19,11 +19,12 @@ export async function checkPromptGuardrails(
   provider: "openrouter" | "anthropic",
   modelId: string,
   apiKey: string,
+  disableReasoning: boolean,
 ): Promise<GuardrailResult> {
   try {
     const classification = provider === "anthropic"
       ? await classifyAnthropic(message, modelId, apiKey)
-      : await classifyOpenRouter(message, modelId, apiKey);
+      : await classifyOpenRouter(message, modelId, apiKey, disableReasoning);
 
     if (classification.toUpperCase().includes("REJECT")) {
       return { allowed: false, reason: "off-topic" };
@@ -40,6 +41,7 @@ async function classifyOpenRouter(
   message: string,
   modelId: string,
   apiKey: string,
+  disableReasoning: boolean,
 ): Promise<string> {
   const client = new OpenAI({
     baseURL: "https://openrouter.ai/api/v1",
@@ -52,8 +54,15 @@ async function classifyOpenRouter(
       { role: "system", content: CLASSIFIER_PROMPT },
       { role: "user", content: message },
     ],
-    max_tokens: 10,
+    // Reasoning models (e.g. gpt-oss-120b) emit CoT before the answer word and
+    // need extra budget; models with disabled reasoning (e.g. Nemotron) output
+    // the word directly so 10 tokens suffices.
+    max_tokens: disableReasoning ? 10 : 50,
     temperature: 0,
+    stream: false,
+    // Only disable reasoning for models that embed CoT in the content field.
+    // Models with mandatory reasoning (e.g. gpt-oss-120b) must omit this flag.
+    ...(disableReasoning ? { reasoning: { enabled: false } } : {}),
   });
 
   return response.choices[0]?.message?.content ?? "REJECT";

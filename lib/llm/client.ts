@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import type { ParsedBlocks, ConversationMessage } from "./types";
-import { extractBlocks } from "./parse";
+import { extractBlocks, stripThinkingBlocks } from "./parse";
 import { INFRASTRUCTURE_UPDATE_TOOL } from "./prompts/diagram";
 
 type LLMProvider = "openrouter" | "anthropic";
@@ -12,6 +12,7 @@ interface LLMCallOptions {
   apiKey: string;
   systemPrompt: string;
   messages: ConversationMessage[];
+  disableReasoning?: boolean;
 }
 
 function getOpenRouterClient(apiKey: string): OpenAI {
@@ -30,6 +31,7 @@ async function callOpenRouter(
   apiKey: string,
   systemPrompt: string,
   messages: ConversationMessage[],
+  disableReasoning: boolean,
 ): Promise<ParsedBlocks> {
   const client = getOpenRouterClient(apiKey);
 
@@ -41,10 +43,14 @@ async function callOpenRouter(
     ],
     max_tokens: 4096,
     temperature: 0.3,
+    stream: false,
+    // Only sent for models that embed CoT in content (e.g. Nemotron).
+    // Models with mandatory reasoning (e.g. gpt-oss-120b) omit this flag.
+    ...(disableReasoning ? { reasoning: { enabled: false } } : {}),
   });
 
   const rawText = response.choices[0]?.message?.content ?? "";
-  return extractBlocks(rawText);
+  return extractBlocks(stripThinkingBlocks(rawText));
 }
 
 async function callAnthropic(
@@ -55,6 +61,9 @@ async function callAnthropic(
 ): Promise<ParsedBlocks> {
   const client = getAnthropicClient(apiKey);
 
+  // TODO: extended thinking — add thinking:{type:'enabled', budget_tokens:N} here
+  // for premium users who want deeper reasoning on complex infrastructure designs.
+  // Compatible with tool_use on Sonnet/Opus. Will need a per-model opt-in flag in session setup.
   const response = await client.messages.create({
     model: modelId,
     max_tokens: 4096,
@@ -99,5 +108,5 @@ export async function callLLM(options: LLMCallOptions): Promise<ParsedBlocks> {
   if (options.provider === "anthropic") {
     return callAnthropic(options.modelId, options.apiKey, options.systemPrompt, options.messages);
   }
-  return callOpenRouter(options.modelId, options.apiKey, options.systemPrompt, options.messages);
+  return callOpenRouter(options.modelId, options.apiKey, options.systemPrompt, options.messages, options.disableReasoning ?? false);
 }

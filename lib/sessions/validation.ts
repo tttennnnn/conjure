@@ -11,6 +11,10 @@ export interface ModelOption {
   tier: "free" | "premium";
   openRouterId?: string;
   anthropicId?: string;
+  // True for models where reasoning must be disabled via OpenRouter extension
+  // (e.g. Nemotron, which emits inline CoT that bleeds into structured output).
+  // False/absent for models where reasoning is mandatory or not applicable.
+  disableReasoning?: boolean;
 }
 
 const MODELS: ModelOption[] = [
@@ -20,20 +24,14 @@ const MODELS: ModelOption[] = [
     provider: "openrouter",
     tier: "free",
     openRouterId: "nvidia/nemotron-3-super-120b-a12b:free",
+    disableReasoning: true,
   },
   {
-    id: "llama-3.3-70b",
-    name: "Llama 3.3 70B",
+    id: "gpt-oss-120b",
+    name: "GPT OSS 120B",
     provider: "openrouter",
     tier: "free",
-    openRouterId: "meta-llama/llama-3.3-70b-instruct:free",
-  },
-  {
-    id: "qwen3-coder",
-    name: "Qwen3 Coder",
-    provider: "openrouter",
-    tier: "free",
-    openRouterId: "qwen/qwen3-coder:free",
+    openRouterId: "openai/gpt-oss-120b:free",
   },
   {
     id: "claude-haiku",
@@ -113,6 +111,7 @@ export function isCustomOpenRouterModel(id: string): boolean {
 export function resolveModelId(sessionModel: string): {
   modelId: string;
   provider: "openrouter" | "anthropic";
+  disableReasoning: boolean;
 } | null {
   const builtIn = getModelById(sessionModel);
   if (builtIn) {
@@ -120,8 +119,8 @@ export function resolveModelId(sessionModel: string): {
       ? builtIn.anthropicId
       : builtIn.openRouterId;
     if (!modelId) return null;
-    return { modelId, provider: builtIn.provider };
+    return { modelId, provider: builtIn.provider, disableReasoning: builtIn.disableReasoning ?? false };
   }
   // Custom model -- always OpenRouter
-  return { modelId: sessionModel, provider: "openrouter" };
+  return { modelId: sessionModel, provider: "openrouter", disableReasoning: false };
 }

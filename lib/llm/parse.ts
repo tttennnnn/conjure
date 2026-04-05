@@ -5,6 +5,12 @@ import { checkNodeIdSync } from "@/lib/config/sync";
 import { extractMermaidNodeIds } from "@/lib/mermaid/validate";
 import { extractConfigNodeIds } from "@/lib/config/validate";
 
+// Strip <think>/<thinking> blocks emitted by reasoning models (Qwen3, DeepSeek-R1, QwQ, etc).
+// Applied before extractBlocks so thinking text never surfaces as chatText.
+export function stripThinkingBlocks(raw: string): string {
+  return raw.replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/gi, "").trim();
+}
+
 // ── Delimiter patterns ──
 
 const MERMAID_PRIMARY = /<<<MERMAID>>>\s*\n?([\s\S]*?)\n?\s*<<<END_MERMAID>>>/;

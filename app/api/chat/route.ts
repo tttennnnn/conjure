@@ -156,6 +156,7 @@ export async function POST(request: Request) {
       resolved.provider,
       resolved.modelId,
       apiKey,
+      resolved.disableReasoning,
     );
     if (!guardrail.allowed) {
       const refusalContent = "I can only help with cloud infrastructure design. Could you describe the infrastructure you'd like to build?";
@@ -188,6 +189,7 @@ export async function POST(request: Request) {
       apiKey,
       systemPrompt,
       messages: history,
+      disableReasoning: resolved.disableReasoning,
     });
 
     // Validate and reconcile
