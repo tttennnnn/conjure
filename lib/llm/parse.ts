@@ -46,6 +46,16 @@ function tryExtract(
   return null;
 }
 
+/** Extract a delimited block from raw text using <<<TAG>>> and <<<END_TAG>>> markers. */
+export function extractDelimitedBlock(text: string, tag: string): string {
+  const open = `<<<${tag}>>>`;
+  const close = `<<<END_${tag}>>>`;
+  const start = text.indexOf(open);
+  const end = text.indexOf(close);
+  if (start === -1 || end === -1) return "";
+  return text.slice(start + open.length, end).trim();
+}
+
 export function extractBlocks(rawResponse: string): ParsedBlocks {
   const raw = unwrapOuterFence(rawResponse);
   let mermaidCode: string | null = null;

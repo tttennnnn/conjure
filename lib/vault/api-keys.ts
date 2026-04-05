@@ -10,11 +10,16 @@ const KEY_PREFIXES: Record<Provider, string> = {
 
 const MIN_KEY_LENGTH = 16;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _serviceClient: any = null;
 function getServiceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
+  if (!_serviceClient) {
+    _serviceClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
+  }
+  return _serviceClient;
 }
 
 export function isValidProvider(provider: string): provider is Provider {

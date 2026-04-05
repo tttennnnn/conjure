@@ -15,8 +15,6 @@ interface DiagramPanelProps {
   onNodeClick?: (nodeId: string) => void;
 }
 
-let mermaidInitialized = false;
-
 export default function DiagramPanel({
   mermaidCode,
   isStale,
@@ -33,6 +31,7 @@ export default function DiagramPanel({
   const [editValue, setEditValue] = useState(mermaidCode);
   const containerRef = useRef<HTMLDivElement>(null);
   const renderCounter = useRef(0);
+  const mermaidInitRef = useRef(false);
 
   // Keep edit buffer in sync when mermaid changes externally (e.g. chat update)
   useEffect(() => {
@@ -52,14 +51,14 @@ export default function DiagramPanel({
 
     try {
       const mermaid = (await import("mermaid")).default;
-      if (!mermaidInitialized) {
+      if (!mermaidInitRef.current) {
         mermaid.initialize({
           startOnLoad: false,
           securityLevel: "strict",
           theme: "neutral",
           fontFamily: "Inter, sans-serif",
         });
-        mermaidInitialized = true;
+        mermaidInitRef.current = true;
       }
 
       renderCounter.current += 1;

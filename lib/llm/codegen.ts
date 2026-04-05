@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { buildCodegenSystemPrompt, CODEGEN_TOOL } from "./prompts/codegen";
+import { extractDelimitedBlock } from "./parse";
 
 export interface IacFiles {
   mainTf: string;
@@ -16,16 +17,6 @@ interface CodegenParams {
   provider: "openrouter" | "anthropic";
   modelId: string;
   apiKey: string;
-}
-
-// Extracts a delimited block from raw text: <<<TAG>>> ... <<<END_TAG>>>
-function extractDelimitedBlock(text: string, tag: string): string {
-  const open = `<<<${tag}>>>`;
-  const close = `<<<END_${tag}>>>`;
-  const start = text.indexOf(open);
-  const end = text.indexOf(close);
-  if (start === -1 || end === -1) return "";
-  return text.slice(start + open.length, end).trim();
 }
 
 async function codegenOpenRouter(params: CodegenParams): Promise<IacFiles> {
