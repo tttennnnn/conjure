@@ -12,7 +12,6 @@ interface ApiKeyCardProps {
 }
 
 export default function ApiKeyCard({
-  provider,
   label,
   description,
   keyHint,
