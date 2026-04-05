@@ -182,12 +182,11 @@ Defence is layered — no single layer is assumed to be sufficient.
 | Scenario | SDK used | Key source |
 |---|---|---|
 | Free models (default) | `openai` package → OpenRouter API | `OPENROUTER_API_KEY` env var |
-| User brings OpenRouter key | `openai` package → OpenRouter API | User's key stored in Supabase Vault |
 | User brings Anthropic key | `@anthropic-ai/sdk` | User's key stored in Supabase Vault |
 
-**Free models available out of the box:** Gemini 2.0 Flash, Llama 3.3 70B, GPT-4o mini.
+**Free models available out of the box:** Nemotron Super 120B, GPT OSS 120B.
 
-**BYOK (Bring Your Own Key):** Users can add their own OpenRouter key (unlocks all OpenRouter models) or Anthropic key (unlocks Claude Haiku, Sonnet, Opus) in Settings > API Keys.
+**BYOK (Bring Your Own Key):** Users can add their own Anthropic key (unlocks Claude Haiku, Sonnet, Opus) in Settings > API Keys.
 
 ### Deploy error handling
 
@@ -242,13 +241,12 @@ The chat panel is always visible and never disabled by deploy status. Users can 
 
 ### Database
 
-Five main tables (see `prisma/schema.prisma`):
+Four main tables (see `prisma/schema.prisma`):
 
 - **sessions** — Mermaid code, Config YAML, generated IaC, status, model choice
 - **messages** — chat history per session (user + assistant messages, cascading delete)
-- **user_custom_models** — user-added OpenRouter models (display name + model ID)
 - **credential_profiles** — cloud provider credentials (encrypted via Supabase Vault)
-- **user_api_keys** — LLM API keys (OpenRouter, Anthropic) encrypted via Supabase Vault
+- **user_api_keys** — LLM API keys (Anthropic) encrypted via Supabase Vault
 
 User accounts are managed by Supabase Auth (not in Prisma).
 

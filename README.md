@@ -58,7 +58,7 @@ When the diagram looks right, click **Generate Code** and Terraform HCL appears 
 | Config format | YAML |
 | IaC output | Terraform |
 | LLM (default) | OpenRouter (free models) |
-| LLM (BYOK) | Anthropic + OpenRouter |
+| LLM (BYOK) | Anthropic |
 | Deployment | Vercel |
 
 ---
@@ -82,7 +82,7 @@ graph TD
     end
 
     subgraph LLM["LLM Provider (one per session)"]
-        OR["OpenRouter\n(free or BYOK)"]
+        OR["OpenRouter\n(free tier)"]
         Anthropic["Anthropic\n(BYOK)"]
     end
 

@@ -10,7 +10,6 @@
 -- Enable RLS on all tables
 ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_custom_models ENABLE ROW LEVEL SECURITY;
 ALTER TABLE credential_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_api_keys ENABLE ROW LEVEL SECURITY;
 
@@ -26,12 +25,6 @@ CREATE POLICY "Users can manage messages in own sessions"
   ON messages FOR ALL
   USING (session_id IN (SELECT id FROM sessions WHERE user_id = auth.uid()))
   WITH CHECK (session_id IN (SELECT id FROM sessions WHERE user_id = auth.uid()));
-
--- user_custom_models: users can only access their own custom models
-CREATE POLICY "Users can manage own custom models"
-  ON user_custom_models FOR ALL
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
 
 -- credential_profiles: users can only access their own cloud credentials
 CREATE POLICY "Users can manage own credential profiles"
