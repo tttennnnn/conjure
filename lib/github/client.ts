@@ -47,6 +47,7 @@ export async function listUserRepos(): Promise<GitHubRepo[]> {
 }
 
 /** Create a pull request on a GitHub repository. */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function createPullRequest(_params: {
   repo: string; // "owner/repo"
   title: string;
@@ -59,6 +60,7 @@ export async function createPullRequest(_params: {
 }
 
 /** Push files to a branch on a GitHub repository. */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function pushFiles(_params: {
   repo: string; // "owner/repo"
   branch: string;

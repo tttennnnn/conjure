@@ -23,7 +23,7 @@ export function createHandler<TBody = unknown>(
   config: { rateLimit?: RateLimiter },
   handler: (ctx: HandlerContext<TBody>) => Promise<NextResponse>,
 ) {
-  return async (request: Request, routeCtx: RouteContext = { params: Promise.resolve({}) }): Promise<NextResponse> => {
+  return async (request: Request, routeCtx: RouteContext): Promise<NextResponse> => {
     const userId = await getAuthenticatedUserId();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -53,7 +53,7 @@ export function createGetHandler(
   config: { rateLimit?: RateLimiter },
   handler: (ctx: GetHandlerContext) => Promise<NextResponse>,
 ) {
-  return async (request: Request, routeCtx: RouteContext = { params: Promise.resolve({}) }): Promise<NextResponse> => {
+  return async (request: Request, routeCtx: RouteContext): Promise<NextResponse> => {
     const userId = await getAuthenticatedUserId();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
