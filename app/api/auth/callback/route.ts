@@ -18,6 +18,15 @@ export async function GET(request: Request) {
       if (next && isValidRedirectPath(next)) {
         return NextResponse.redirect(`${origin}${next}`);
       }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      const isOAuth = user?.app_metadata?.provider !== "email";
+
+      if (isOAuth) {
+        // GitHub OAuth sign-in/register: user is already authenticated
+        return NextResponse.redirect(`${origin}/home`);
+      }
+
       // Email verification: sign out so user must log in manually
       await supabase.auth.signOut();
       return NextResponse.redirect(`${origin}/login?verified=true`);
