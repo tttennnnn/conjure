@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { parse, stringify } from "yaml";
+import { parse } from "yaml";
+import { extractNodeYaml, replaceNodeInYaml } from "@/lib/config/node-yaml";
 
 interface PropertiesDrawerProps {
   nodeId: string;
@@ -9,23 +10,6 @@ interface PropertiesDrawerProps {
   sessionId: string;
   onClose: () => void;
   onSaved: (newConfigYaml: string, iacStale: boolean) => void;
-}
-
-function extractNodeYaml(configYaml: string, nodeId: string): string {
-  try {
-    const parsed = parse(configYaml) as { nodes: Record<string, unknown> };
-    const nodeData = parsed?.nodes?.[nodeId];
-    if (nodeData === undefined) return "";
-    return stringify(nodeData).trimEnd();
-  } catch {
-    return "";
-  }
-}
-
-function replaceNodeInYaml(configYaml: string, nodeId: string, nodeYaml: string): string {
-  const full = parse(configYaml) as { nodes: Record<string, unknown> };
-  full.nodes[nodeId] = parse(nodeYaml);
-  return stringify(full);
 }
 
 export default function PropertiesDrawer({

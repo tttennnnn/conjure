@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { downloadAsZip } from "@/lib/utils/zip";
 
 export interface IacFiles {
   mainTf: string;
@@ -22,146 +23,6 @@ const FILE_TABS: { key: FileKey; label: string }[] = [
   { key: "outputsTf", label: "outputs.tf" },
 ];
 
-function downloadTextFile(filename: string, content: string) {
-  const blob = new Blob([content], { type: "text/plain" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-async function downloadZip(files: IacFiles) {
-  // Build a minimal ZIP archive without external dependencies.
-  // Uses the browser's CompressionStream (supported in all modern browsers).
-  // Falls back to downloading files individually if CompressionStream is unavailable.
-  const entries: { name: string; content: string }[] = [
-    { name: "main.tf", content: files.mainTf },
-    { name: "variables.tf", content: files.variablesTf },
-    { name: "outputs.tf", content: files.outputsTf },
-  ];
-
-  if (typeof CompressionStream === "undefined") {
-    // Fallback: individual downloads
-    for (const entry of entries) {
-      downloadTextFile(entry.name, entry.content);
-    }
-    return;
-  }
-
-  // Build a ZIP using raw ZIP format (no compression, stored method)
-  const encoder = new TextEncoder();
-  const parts: Uint8Array[] = [];
-  const centralDir: Uint8Array[] = [];
-  let offset = 0;
-
-  function u16(n: number): Uint8Array {
-    return new Uint8Array([n & 0xff, (n >> 8) & 0xff]);
-  }
-  function u32(n: number): Uint8Array {
-    return new Uint8Array([n & 0xff, (n >> 8) & 0xff, (n >> 16) & 0xff, (n >> 24) & 0xff]);
-  }
-  function concat(...arrays: Uint8Array[]): Uint8Array {
-    const total = arrays.reduce((s, a) => s + a.length, 0);
-    const out = new Uint8Array(total);
-    let pos = 0;
-    for (const a of arrays) { out.set(a, pos); pos += a.length; }
-    return out;
-  }
-
-  for (const entry of entries) {
-    const data = encoder.encode(entry.content);
-    const name = encoder.encode(entry.name);
-    const crc = crc32(data);
-
-    // Local file header
-    const localHeader = concat(
-      new Uint8Array([0x50, 0x4b, 0x03, 0x04]), // signature
-      u16(20),           // version needed
-      u16(0),            // flags
-      u16(0),            // compression: stored
-      u16(0), u16(0),    // mod time, mod date
-      u32(crc),
-      u32(data.length),  // compressed size
-      u32(data.length),  // uncompressed size
-      u16(name.length),
-      u16(0),            // extra field length
-      name,
-    );
-
-    parts.push(localHeader, data);
-
-    // Central directory entry
-    const cdEntry = concat(
-      new Uint8Array([0x50, 0x4b, 0x01, 0x02]), // signature
-      u16(20), u16(20),  // version made by, version needed
-      u16(0),            // flags
-      u16(0),            // compression: stored
-      u16(0), u16(0),    // mod time, mod date
-      u32(crc),
-      u32(data.length),
-      u32(data.length),
-      u16(name.length),
-      u16(0), u16(0),    // extra, comment
-      u16(0), u16(0),    // disk start, int attr
-      u32(0),            // ext attr
-      u32(offset),       // local header offset
-      name,
-    );
-    centralDir.push(cdEntry);
-    offset += localHeader.length + data.length;
-  }
-
-  const cdSize = centralDir.reduce((s, e) => s + e.length, 0);
-  const eocd = concat(
-    new Uint8Array([0x50, 0x4b, 0x05, 0x06]), // signature
-    u16(0), u16(0),        // disk number, disk with CD
-    u16(entries.length), u16(entries.length),
-    u32(cdSize),
-    u32(offset),
-    u16(0),                // comment length
-  );
-
-  const zipBytes = concat(...parts, ...centralDir, eocd);
-  // Slice to get a plain ArrayBuffer (avoids SharedArrayBuffer type mismatch in Blob constructor)
-  const zipBuffer = zipBytes.buffer.slice(zipBytes.byteOffset, zipBytes.byteOffset + zipBytes.byteLength) as ArrayBuffer;
-  const blob = new Blob([zipBuffer], { type: "application/zip" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "terraform.zip";
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-// CRC-32 implementation for ZIP checksums
-function crc32(data: Uint8Array): number {
-  const table = makeCrcTable();
-  let crc = 0xffffffff;
-  for (let i = 0; i < data.length; i++) {
-    const byte = data[i] ?? 0;
-    const idx = (crc ^ byte) & 0xff;
-    crc = (crc >>> 8) ^ (table[idx] ?? 0);
-  }
-  return (crc ^ 0xffffffff) >>> 0;
-}
-
-let _crcTable: number[] | null = null;
-function makeCrcTable(): number[] {
-  if (_crcTable) return _crcTable;
-  const t: number[] = [];
-  for (let n = 0; n < 256; n++) {
-    let c = n;
-    for (let k = 0; k < 8; k++) {
-      c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    }
-    t.push(c);
-  }
-  _crcTable = t;
-  return _crcTable;
-}
-
 export default function CodePanel({ iacCode, isStale, iacTool }: CodePanelProps) {
   const [activeFile, setActiveFile] = useState<FileKey>("mainTf");
   const [copied, setCopied] = useState(false);
@@ -176,7 +37,14 @@ export default function CodePanel({ iacCode, isStale, iacTool }: CodePanelProps)
   }
 
   function handleDownloadZip() {
-    downloadZip(iacCode);
+    downloadAsZip(
+      [
+        { name: "main.tf", content: iacCode.mainTf },
+        { name: "variables.tf", content: iacCode.variablesTf },
+        { name: "outputs.tf", content: iacCode.outputsTf },
+      ],
+      "terraform.zip",
+    );
   }
 
   return (
