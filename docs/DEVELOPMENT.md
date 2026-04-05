@@ -191,6 +191,8 @@ Defence is layered — no single layer is assumed to be sufficient.
 
 ### Deploy error handling
 
+> **Planned — not yet implemented.** This section describes the target design for deploy functionality.
+
 After code is generated, users can deploy via three paths with different levels of observability:
 
 | Path | Conjure visibility | Notes |
