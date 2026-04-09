@@ -1,15 +1,23 @@
 export const dynamic = "force-dynamic";
 
 import { createGetHandler } from "@/lib/api/handler";
-import { listUserRepos } from "@/lib/github/client";
+import { getGitHubStatus, listUserRepos } from "@/lib/github/client";
 import { NextResponse } from "next/server";
 
-// TODO: Returns the list of GitHub repos the user can access.
-// Used by: session/new page repo picker (shown when GitHub is connected).
-
 export const GET = createGetHandler({}, async () => {
-  // TODO: Implement — call listUserRepos() and return the result.
-  // Should return 403 if GitHub is not connected.
-  const repos = await listUserRepos();
-  return NextResponse.json(repos);
+  const status = await getGitHubStatus();
+  if (!status.connected) {
+    return NextResponse.json({ error: "GitHub is not connected" }, { status: 403 });
+  }
+
+  try {
+    const repos = await listUserRepos();
+    return NextResponse.json(repos);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to list repositories";
+    if (message === "GITHUB_NOT_CONNECTED") {
+      return NextResponse.json({ error: "GitHub is not connected" }, { status: 403 });
+    }
+    return NextResponse.json({ error: "Failed to list repositories" }, { status: 500 });
+  }
 });

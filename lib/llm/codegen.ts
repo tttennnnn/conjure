@@ -17,7 +17,7 @@ interface CodegenParams {
   provider: "openrouter" | "anthropic";
   modelId: string;
   apiKey: string;
-  disableReasoning?: boolean;
+  disableReasoning: boolean;
 }
 
 async function codegenOpenRouter(params: CodegenParams): Promise<IacFiles> {

@@ -48,6 +48,20 @@ function groupModels(
   return groups;
 }
 
+interface GitHubStatus {
+  connected: boolean;
+  username: string | null;
+  avatarUrl: string | null;
+}
+
+interface GitHubRepo {
+  id: number;
+  fullName: string;
+  private: boolean;
+  defaultBranch: string;
+  htmlUrl: string;
+}
+
 export default function NewSessionPage() {
   const router = useRouter();
   const [targetEnv, setTargetEnv] = useState<"aws" | "gcp">("aws");
@@ -56,6 +70,14 @@ export default function NewSessionPage() {
   const [models, setModels] = useState<ModelOption[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [githubLoading, setGithubLoading] = useState(true);
+  const [githubStatus, setGithubStatus] = useState<GitHubStatus>({
+    connected: false,
+    username: null,
+    avatarUrl: null,
+  });
+  const [githubRepos, setGithubRepos] = useState<GitHubRepo[]>([]);
+  const [selectedRepo, setSelectedRepo] = useState("");
 
   useEffect(() => {
     async function loadModels() {
@@ -72,6 +94,41 @@ export default function NewSessionPage() {
     loadModels();
   }, []);
 
+  useEffect(() => {
+    async function loadGitHubState() {
+      try {
+        const statusRes = await fetch("/api/github/status", { cache: "no-store" });
+        if (!statusRes.ok) {
+          setGithubLoading(false);
+          return;
+        }
+
+        const status = (await statusRes.json()) as GitHubStatus;
+        setGithubStatus(status);
+
+        if (!status.connected) {
+          setGithubRepos([]);
+          setGithubLoading(false);
+          return;
+        }
+
+        const reposRes = await fetch("/api/github/repos", { cache: "no-store" });
+        if (reposRes.ok) {
+          const repos = (await reposRes.json()) as GitHubRepo[];
+          setGithubRepos(repos);
+        } else {
+          setGithubRepos([]);
+        }
+      } catch {
+        setGithubRepos([]);
+      } finally {
+        setGithubLoading(false);
+      }
+    }
+
+    loadGitHubState();
+  }, []);
+
   async function handleSubmit() {
     setError(null);
     setSubmitting(true);
@@ -80,7 +137,13 @@ export default function NewSessionPage() {
       const res = await fetch("/api/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, targetEnv, iacTool, model: selectedModel }),
+        body: JSON.stringify({
+          name,
+          targetEnv,
+          iacTool,
+          model: selectedModel,
+          githubRepo: selectedRepo || undefined,
+        }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -166,15 +229,51 @@ export default function NewSessionPage() {
             </svg>
             GitHub Integration
           </div>
-          <div className="rounded-[5px] bg-[var(--warn-bg)] px-2.5 py-1.5 text-[10px] text-[var(--warn-text)]">
-            ⚠ GitHub not connected.{" "}
-            <button
-              onClick={() => router.push("/settings/github")}
-              className="cursor-pointer font-medium underline"
-            >
-              Connect in Settings
-            </button>
-          </div>
+          {githubLoading ? (
+            <div className="rounded-[5px] bg-[var(--surface2)] px-2.5 py-1.5 text-[10px] text-[var(--muted)]">
+              Loading GitHub status...
+            </div>
+          ) : githubStatus.connected ? (
+            <>
+              <div className="rounded-[5px] bg-[var(--success-bg)] px-2.5 py-1.5 text-[10px] text-[var(--success-text)]">
+                ✓ GitHub connected{githubStatus.username ? ` as ${githubStatus.username}` : ""}
+              </div>
+              <div className="flex flex-col gap-1">
+                <label
+                  htmlFor="github-repo"
+                  className="text-[10px] font-semibold uppercase tracking-wide text-[var(--hint)]"
+                >
+                  Repository (optional)
+                </label>
+                <select
+                  id="github-repo"
+                  value={selectedRepo}
+                  onChange={(e) => setSelectedRepo(e.target.value)}
+                  className="w-full rounded-md border border-[var(--border)] bg-[var(--surface2)] px-2.5 py-2 text-[11px] text-[var(--text)] outline-none focus:border-[var(--text)]"
+                >
+                  <option value="">No repository</option>
+                  {githubRepos.map((repo) => (
+                    <option key={repo.id} value={repo.fullName}>
+                      {repo.fullName} {repo.private ? "(private)" : "(public)"}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-[var(--muted)]">
+                  Repositories with push access are listed.
+                </p>
+              </div>
+            </>
+          ) : (
+            <div className="rounded-[5px] bg-[var(--warn-bg)] px-2.5 py-1.5 text-[10px] text-[var(--warn-text)]">
+              ⚠ GitHub not connected.{" "}
+              <button
+                onClick={() => router.push("/settings/github")}
+                className="cursor-pointer font-medium underline"
+              >
+                Connect in Settings
+              </button>
+            </div>
+          )}
           <div className="text-[10px] text-[var(--muted)]">
             Optional. You can also export code without GitHub.
           </div>

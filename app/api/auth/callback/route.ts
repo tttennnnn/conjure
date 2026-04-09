@@ -19,10 +19,13 @@ export async function GET(request: Request) {
         return NextResponse.redirect(`${origin}${next}`);
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
-      const isOAuth = user?.app_metadata?.provider !== "email";
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      const hasGitHubIdentity =
+        user?.identities?.some((identity) => identity.provider === "github") ?? false;
 
-      if (isOAuth) {
+      if (hasGitHubIdentity) {
         // GitHub OAuth sign-in/register: user is already authenticated
         return NextResponse.redirect(`${origin}/home`);
       }

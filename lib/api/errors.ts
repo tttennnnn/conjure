@@ -8,15 +8,29 @@ function getErrorStatus(err: unknown): number | null {
   return null;
 }
 
+function getErrorMessage(err: unknown): string | null {
+  if (typeof err === "object" && err !== null && "message" in err) {
+    const message = (err as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim().length > 0) {
+      return message;
+    }
+  }
+  return null;
+}
+
 /** Classify an LLM SDK error into a user-facing message and HTTP status. */
 export function classifyLLMError(err: unknown): { message: string; status: number } {
   const status = getErrorStatus(err);
+  const message = getErrorMessage(err);
 
   if (status === 401) {
     return { message: LLM_AUTH_ERROR_RESPONSE, status: 401 };
   }
   if (status === 400) {
     return { message: "The request to the AI model was invalid. Please check your model configuration.", status: 400 };
+  }
+  if (status === 400 && message) {
+    return { message, status: 200 };
   }
   if (status === 429) {
     return { message: "The model is currently rate limited. Please wait a moment and try again.", status: 429 };
