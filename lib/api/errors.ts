@@ -13,14 +13,17 @@ export function classifyLLMError(err: unknown): { message: string; status: numbe
   const status = getErrorStatus(err);
 
   if (status === 401) {
-    return { message: LLM_AUTH_ERROR_RESPONSE, status: 200 };
+    return { message: LLM_AUTH_ERROR_RESPONSE, status: 401 };
+  }
+  if (status === 400) {
+    return { message: "The request to the AI model was invalid. Please check your model configuration.", status: 400 };
   }
   if (status === 429) {
-    return { message: "The model is currently rate limited. Please wait a moment and try again.", status: 200 };
+    return { message: "The model is currently rate limited. Please wait a moment and try again.", status: 429 };
   }
   if (status === 502 || status === 503) {
-    return { message: "The model is temporarily unavailable. Please try again shortly.", status: 200 };
+    return { message: "The model is temporarily unavailable. Please try again shortly.", status: 503 };
   }
 
-  return { message: LLM_ERROR_RESPONSE, status: 200 };
+  return { message: LLM_ERROR_RESPONSE, status: 500 };
 }

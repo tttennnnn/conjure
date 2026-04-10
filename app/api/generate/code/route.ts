@@ -51,6 +51,7 @@ export const POST = createHandler<{ sessionId?: string }>(
         provider: resolved.provider,
         modelId: resolved.modelId,
         apiKey: keyResult.apiKey,
+        disableReasoning: resolved.disableReasoning,
       });
 
       await getPrisma().session.update({
@@ -67,7 +68,7 @@ export const POST = createHandler<{ sessionId?: string }>(
       const classified = classifyLLMError(err);
       return NextResponse.json(
         { error: classified.message },
-        { status: 500 },
+        { status: classified.status },
       );
     }
   },

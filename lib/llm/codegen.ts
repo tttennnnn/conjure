@@ -17,6 +17,7 @@ interface CodegenParams {
   provider: "openrouter" | "anthropic";
   modelId: string;
   apiKey: string;
+  disableReasoning?: boolean;
 }
 
 async function codegenOpenRouter(params: CodegenParams): Promise<IacFiles> {
@@ -41,6 +42,7 @@ async function codegenOpenRouter(params: CodegenParams): Promise<IacFiles> {
     ],
     max_tokens: 8192,
     temperature: 0.1,
+    ...(params.disableReasoning ? { reasoning: { enabled: false } } : {}),
   });
 
   const rawText = response.choices[0]?.message?.content ?? "";

@@ -41,7 +41,7 @@ async function callOpenRouter(
       { role: "system", content: systemPrompt },
       ...messages.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
     ],
-    max_tokens: 4096,
+    max_tokens: 8192,
     temperature: 0.3,
     stream: false,
     // Only sent for models that embed CoT in content (e.g. Nemotron).
