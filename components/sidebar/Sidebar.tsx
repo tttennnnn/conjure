@@ -77,7 +77,6 @@ function SessionRow({
 
 interface SidebarProps {
   displayName: string;
-  initials: string;
   avatarUrl: string | null;
 }
 
@@ -128,7 +127,7 @@ const STATUS_PILL: Record<string, string> = {
   failed: "bg-[var(--danger-bg)] text-[var(--danger-text)]",
 };
 
-export default function Sidebar({ displayName, initials, avatarUrl }: SidebarProps) {
+export default function Sidebar({ displayName, avatarUrl }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
@@ -255,7 +254,7 @@ export default function Sidebar({ displayName, initials, avatarUrl }: SidebarPro
                 <img src={avatarUrl} alt="" className="h-6 w-6 rounded-full object-cover" />
               ) : (
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--info-bg)] text-[9px] font-semibold text-[var(--info-text)]">
-                  {initials}
+                  {displayName.slice(0, 2).toUpperCase()}
                 </div>
               )}
             </div>
@@ -344,7 +343,7 @@ export default function Sidebar({ displayName, initials, avatarUrl }: SidebarPro
                 <img src={avatarUrl} alt="" className="h-6 w-6 rounded-full object-cover" />
               ) : (
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--info-bg)] text-[9px] font-semibold text-[var(--info-text)]">
-                  {initials}
+                  {displayName.slice(0, 2).toUpperCase()}
                 </div>
               )}
             </div>
