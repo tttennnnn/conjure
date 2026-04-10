@@ -105,34 +105,22 @@ export async function getGitHubStatus(): Promise<GitHubStatus> {
   }
 
   const token = session?.provider_token;
-  if (typeof token === "string" && token.length > 0) {
-    try {
-      const ghUser = await githubFetch<GitHubApiUserResponse>("/user", token);
-      return {
-        connected: true,
-        username: ghUser.login ?? null,
-        avatarUrl: ghUser.avatar_url ?? null,
-      };
-    } catch {
-      // Fall back to identity data when token is unavailable/expired.
-    }
+  if (typeof token !== "string" || token.length === 0) {
+    // Token missing — treat as disconnected so the user is prompted to reconnect.
+    return { connected: false, username: null, avatarUrl: null };
   }
 
-  const identity = user.identities?.find((item) => item.provider === "github");
-  const identityData = (identity?.identity_data ?? {}) as Record<string, unknown>;
-
-  const username =
-    (typeof identityData.user_name === "string" && identityData.user_name) ||
-    (typeof identityData.preferred_username === "string" && identityData.preferred_username) ||
-    (typeof identityData.login === "string" && identityData.login) ||
-    null;
-
-  const avatarUrl =
-    (typeof identityData.avatar_url === "string" && identityData.avatar_url) ||
-    (typeof user.user_metadata?.avatar_url === "string" && user.user_metadata.avatar_url) ||
-    null;
-
-  return { connected: true, username, avatarUrl };
+  try {
+    const ghUser = await githubFetch<GitHubApiUserResponse>("/user", token);
+    return {
+      connected: true,
+      username: ghUser.login ?? null,
+      avatarUrl: ghUser.avatar_url ?? null,
+    };
+  } catch {
+    // Token expired or revoked — treat as disconnected.
+    return { connected: false, username: null, avatarUrl: null };
+  }
 }
 
 /** List repositories the authenticated GitHub user has access to. */
@@ -243,11 +231,16 @@ export async function pushFiles(params: {
       token,
     );
 
+    const headCommit = await githubFetch<{ tree: { sha: string } }>(
+      `${basePath}/git/commits/${ref.object.sha}`,
+      token,
+    );
+
     const tree = await githubFetch<{ sha: string }>(`${basePath}/git/trees`, token, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        base_tree: ref.object.sha,
+        base_tree: headCommit.tree.sha,
         tree: params.files.map((file) => ({
           path: file.path,
           mode: "100644",
