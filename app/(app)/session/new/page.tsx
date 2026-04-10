@@ -7,6 +7,7 @@ import {
   type ModelOption,
   getAvailableModels,
 } from "@/lib/sessions/validation";
+import { type GitHubRepo, type GitHubStatus } from "@/lib/github/client";
 
 const ENV_OPTIONS = [
   { id: "aws" as const, name: "AWS", sub: "EC2, RDS, ElastiCache, VPC\u2026" },
@@ -48,19 +49,6 @@ function groupModels(
   return groups;
 }
 
-interface GitHubStatus {
-  connected: boolean;
-  username: string | null;
-  avatarUrl: string | null;
-}
-
-interface GitHubRepo {
-  id: number;
-  fullName: string;
-  private: boolean;
-  defaultBranch: string;
-  htmlUrl: string;
-}
 
 export default function NewSessionPage() {
   const router = useRouter();
@@ -77,6 +65,7 @@ export default function NewSessionPage() {
     avatarUrl: null,
   });
   const [githubRepos, setGithubRepos] = useState<GitHubRepo[]>([]);
+  const [githubRepoError, setGithubRepoError] = useState<string | null>(null);
   const [selectedRepo, setSelectedRepo] = useState("");
 
   useEffect(() => {
@@ -118,9 +107,11 @@ export default function NewSessionPage() {
           setGithubRepos(repos);
         } else {
           setGithubRepos([]);
+          setGithubRepoError("Failed to load repositories");
         }
       } catch {
         setGithubRepos([]);
+        setGithubRepoError("Failed to load repositories");
       } finally {
         setGithubLoading(false);
       }
@@ -258,9 +249,13 @@ export default function NewSessionPage() {
                     </option>
                   ))}
                 </select>
-                <p className="text-[10px] text-[var(--muted)]">
-                  Repositories with push access are listed.
-                </p>
+                {githubRepoError ? (
+                  <p className="text-[10px] text-[var(--danger-text)]">{githubRepoError}</p>
+                ) : (
+                  <p className="text-[10px] text-[var(--muted)]">
+                    Repositories with push access are listed.
+                  </p>
+                )}
               </div>
             </>
           ) : (

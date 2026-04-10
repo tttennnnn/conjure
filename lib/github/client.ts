@@ -1,15 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-
-// TODO: Implement GitHub API helpers using the user's OAuth token from Supabase Auth.
-//
-// Supabase stores the GitHub OAuth token as part of the user's auth session.
-// Retrieve it via:
-//   const supabase = await createClient();
-//   const { data: { session } } = await supabase.auth.getSession();
-//   const githubToken = session?.provider_token;
-//
-// Use the GitHub REST API (https://api.github.com) with that token.
-// Do NOT install octokit — use fetch with Authorization header to keep deps minimal.
+import { isValidGithubRepo } from "@/lib/sessions/validation";
 
 export interface GitHubRepo {
   id: number;
@@ -17,6 +7,18 @@ export interface GitHubRepo {
   private: boolean;
   defaultBranch: string;
   htmlUrl: string;
+}
+
+export interface GitHubStatus {
+  connected: boolean;
+  username: string | null;
+  avatarUrl: string | null;
+}
+
+export class GitHubNotConnectedError extends Error {
+  constructor() {
+    super("GitHub is not connected");
+  }
 }
 
 const GITHUB_API_BASE = "https://api.github.com";
@@ -49,6 +51,7 @@ async function getGitHubToken() {
 }
 
 function parseRepo(repo: string): { owner: string; name: string } | null {
+  if (!isValidGithubRepo(repo)) return null;
   const [owner, name] = repo.split("/");
   if (!owner || !name) return null;
   return { owner, name };
@@ -83,11 +86,7 @@ async function githubFetch<T>(path: string, token: string, init?: RequestInit): 
 }
 
 /** Check whether the current user has a valid GitHub connection. */
-export async function getGitHubStatus(): Promise<{
-  connected: boolean;
-  username: string | null;
-  avatarUrl: string | null;
-}> {
+export async function getGitHubStatus(): Promise<GitHubStatus> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -139,7 +138,7 @@ export async function getGitHubStatus(): Promise<{
 export async function listUserRepos(): Promise<GitHubRepo[]> {
   const token = await getGitHubToken();
   if (!token) {
-    throw new Error("GITHUB_NOT_CONNECTED");
+    throw new GitHubNotConnectedError();
   }
 
   const repos: GitHubApiRepoResponse[] = [];

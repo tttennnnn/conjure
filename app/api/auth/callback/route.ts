@@ -22,10 +22,9 @@ export async function GET(request: Request) {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      const hasGitHubIdentity =
-        user?.identities?.some((identity) => identity.provider === "github") ?? false;
+      const isOAuth = user?.app_metadata?.provider !== "email";
 
-      if (hasGitHubIdentity) {
+      if (isOAuth) {
         // GitHub OAuth sign-in/register: user is already authenticated
         return NextResponse.redirect(`${origin}/home`);
       }

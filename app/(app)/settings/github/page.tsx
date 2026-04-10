@@ -1,23 +1,14 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { type GitHubStatus } from "@/lib/github/client";
+import { type UserIdentity } from "@supabase/supabase-js";
 import { useCallback, useEffect, useMemo, useState } from "react";
-
-interface GitHubStatus {
-  connected: boolean;
-  username: string | null;
-  avatarUrl: string | null;
-}
 
 type GitHubIdentity = {
   identityId: string;
   provider: string;
-  rawIdentity: {
-    id: string;
-    user_id: string;
-    identity_id: string;
-    provider: string;
-  };
+  rawIdentity: UserIdentity;
 };
 
 function mapConnectErrorMessage(message?: string): string {
@@ -65,7 +56,7 @@ export default function GitHubPage() {
     setStatus(data);
     setPrimaryProvider(userRes.data.user?.app_metadata?.provider ?? null);
 
-    const identities = ((identitiesRes.data?.identities ?? []) as GitHubIdentity["rawIdentity"][]).map(
+    const identities = ((identitiesRes.data?.identities ?? []) as UserIdentity[]).map(
       (identity): GitHubIdentity => ({
         identityId: identity.identity_id,
         provider: identity.provider,
@@ -154,6 +145,7 @@ export default function GitHubPage() {
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 overflow-hidden rounded-full border border-[var(--border)] bg-[var(--surface2)]">
                 {status.avatarUrl ? (
+                  // External avatar URL from GitHub — can't use next/image without adding github.com to remotePatterns config
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={status.avatarUrl} alt="GitHub avatar" className="h-full w-full object-cover" />
                 ) : (
