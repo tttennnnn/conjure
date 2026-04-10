@@ -29,11 +29,15 @@ export default async function AppLayout({
 
   const initials = getInitials(displayName);
 
+  const avatarUrl =
+    (typeof user.user_metadata?.avatar_url === "string" && user.user_metadata.avatar_url) || null;
+
   return (
     <div className="flex h-full">
       <Sidebar
         displayName={displayName}
         initials={initials}
+        avatarUrl={avatarUrl}
       />
       <main className="flex flex-1 flex-col overflow-hidden">{children}</main>
     </div>
