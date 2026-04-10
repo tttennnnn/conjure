@@ -88,9 +88,10 @@ async function githubFetch<T>(path: string, token: string, init?: RequestInit): 
 /** Check whether the current user has a valid GitHub connection. */
 export async function getGitHubStatus(): Promise<GitHubStatus> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [{ data: { user } }, { data: { session } }] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase.auth.getSession(),
+  ]);
 
   if (!user) {
     return { connected: false, username: null, avatarUrl: null };
@@ -103,8 +104,8 @@ export async function getGitHubStatus(): Promise<GitHubStatus> {
     return { connected: false, username: null, avatarUrl: null };
   }
 
-  const token = await getGitHubToken();
-  if (token) {
+  const token = session?.provider_token;
+  if (typeof token === "string" && token.length > 0) {
     try {
       const ghUser = await githubFetch<GitHubApiUserResponse>("/user", token);
       return {
