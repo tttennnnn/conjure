@@ -186,7 +186,6 @@ export default function DiagramPanel({
             autoFocus
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
-            onBlur={handleEditSave}
             onKeyDown={handleEditKeyDown}
             className="h-full w-full resize-none rounded border border-[var(--border)] bg-[var(--surface)] p-3 font-[JetBrains_Mono,monospace] text-[11px] leading-relaxed text-[var(--text)] focus:outline-none focus:ring-1 focus:ring-[var(--accent,#6366f1)]"
             spellCheck={false}
