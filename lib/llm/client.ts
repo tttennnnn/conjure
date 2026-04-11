@@ -66,7 +66,7 @@ async function callAnthropic(
   // Compatible with tool_use on Sonnet/Opus. Will need a per-model opt-in flag in session setup.
   const response = await client.messages.create({
     model: modelId,
-    max_tokens: 4096,
+    max_tokens: 8192,
     temperature: 0.3,
     system: systemPrompt,
     messages: messages.map((m) => ({ role: m.role, content: m.content })),

@@ -103,6 +103,24 @@ export function isValidGithubRepo(repo: string): boolean {
 }
 
 /**
+ * Validates a git branch name using git check-ref-format rules.
+ * See: https://git-scm.com/docs/git-check-ref-format
+ */
+export function isValidGithubBranch(branch: string): boolean {
+  if (!branch || branch.length > 255) return false;
+  // Forbid control characters and special git symbols
+  if (/[\x00-\x1f\x7f ~^:?*\[\\\s]/.test(branch)) return false;
+  if (branch.includes("..")) return false;   // no consecutive dots
+  if (branch.includes("@{")) return false;   // no @{ sequence
+  if (branch.startsWith("/") || branch.endsWith("/")) return false;
+  if (branch.startsWith(".") || branch.endsWith(".")) return false;
+  if (branch.endsWith(".lock")) return false;
+  if (branch === "@") return false;
+  if (branch.includes("//")) return false;   // no consecutive slashes
+  return true;
+}
+
+/**
  * Resolve the actual API model ID for a given session model string.
  * Returns null if the model ID is not in the built-in list.
  */

@@ -19,7 +19,9 @@ export async function GET(request: Request) {
         return NextResponse.redirect(`${origin}${next}`);
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       const isOAuth = user?.app_metadata?.provider !== "email";
 
       if (isOAuth) {

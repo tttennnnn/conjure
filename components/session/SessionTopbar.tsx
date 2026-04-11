@@ -8,6 +8,7 @@ interface SessionTopbarProps {
   targetEnv: string;
   model: string;
   iacTool: string;
+  githubRepo?: string;
 }
 
 export default function SessionTopbar({
@@ -16,6 +17,7 @@ export default function SessionTopbar({
   targetEnv,
   model,
   iacTool,
+  githubRepo,
 }: SessionTopbarProps) {
   const [sessionName, setSessionName] = useState(initialName);
   const [isRenaming, setIsRenaming] = useState(false);
@@ -109,6 +111,11 @@ export default function SessionTopbar({
         <span className="rounded border border-[var(--border)] bg-[var(--surface2)] px-1.5 py-0.5 text-[10px] capitalize text-[var(--muted)]">
           {iacTool}
         </span>
+        {githubRepo && (
+          <span className="rounded border border-[var(--border)] bg-[var(--surface2)] px-1.5 py-0.5 text-[10px] text-[var(--muted)]">
+            {githubRepo}
+          </span>
+        )}
       </div>
     </div>
   );

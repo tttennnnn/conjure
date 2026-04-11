@@ -77,7 +77,7 @@ function SessionRow({
 
 interface SidebarProps {
   displayName: string;
-  initials: string;
+  avatarUrl: string | null;
 }
 
 const SIDEBAR_ICON = (
@@ -127,7 +127,7 @@ const STATUS_PILL: Record<string, string> = {
   failed: "bg-[var(--danger-bg)] text-[var(--danger-text)]",
 };
 
-export default function Sidebar({ displayName, initials }: SidebarProps) {
+export default function Sidebar({ displayName, avatarUrl }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
@@ -305,9 +305,14 @@ export default function Sidebar({ displayName, initials }: SidebarProps) {
           title={displayName}
         >
           <div className="flex w-[48px] shrink-0 items-center justify-center">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--info-bg)] text-[9px] font-semibold text-[var(--info-text)]">
-              {initials}
-            </div>
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatarUrl} alt="" className="h-6 w-6 rounded-full object-cover" />
+            ) : (
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--info-bg)] text-[9px] font-semibold text-[var(--info-text)]">
+                {displayName.slice(0, 2).toUpperCase()}
+              </div>
+            )}
           </div>
           {showExpanded && (
             <>

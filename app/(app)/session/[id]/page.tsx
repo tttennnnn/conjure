@@ -48,6 +48,8 @@ export default async function SessionPage({
         status: session.status,
         iacCode,
         iacStale: session.iacStale,
+        githubRepo: session.githubRepo,
+        githubBranch: session.githubBranch,
       }}
       initialMessages={session.messages.map((m) => ({
         id: m.id,

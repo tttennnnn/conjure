@@ -35,6 +35,8 @@ interface SessionData {
   status: string;
   iacCode: IacFiles | null;
   iacStale: boolean;
+  githubRepo: string | null;
+  githubBranch: string | null;
 }
 
 interface SessionViewProps {
@@ -96,11 +98,19 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
         targetEnv={session.targetEnv}
         model={session.model}
         iacTool={session.iacTool}
+        githubRepo={session.githubRepo ?? undefined}
       />
 
       <div className="flex flex-1 min-h-0">
         {/* Chat column */}
         <div className="flex w-[280px] shrink-0 flex-col border-r border-[var(--border)] bg-[var(--surface)]">
+          {(session.githubRepo || session.githubBranch) && (
+            <div className="shrink-0 border-b border-[var(--border)] bg-[var(--info-bg)] px-3 py-2 text-[10px] text-[var(--info-text)]">
+              Linked to {session.githubRepo ?? "repo"}
+              {session.githubBranch ? ` (${session.githubBranch})` : ""}.{" "}
+              Auto-import of existing .tf files is coming soon — you can build from scratch and export to this repo later.
+            </div>
+          )}
           <ChatPanel messages={chat.messages} isLoading={chat.isLoading} />
           <ChatInput onSend={handleSendMessage} disabled={chat.isLoading} />
         </div>
