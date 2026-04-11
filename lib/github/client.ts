@@ -9,6 +9,11 @@ export interface GitHubRepo {
   htmlUrl: string;
 }
 
+export interface GitHubBranch {
+  name: string;
+  sha: string;
+}
+
 export interface GitHubStatus {
   connected: boolean;
   username: string | null;
@@ -26,6 +31,21 @@ const GITHUB_API_BASE = "https://api.github.com";
 type GitHubApiUserResponse = {
   login: string;
   avatar_url: string | null;
+};
+
+type GitHubApiBranchResponse = {
+  name: string;
+  commit: { sha: string };
+};
+
+type GitHubApiTreeResponse = {
+  tree: { path: string; type: string }[];
+  truncated: boolean;
+};
+
+type GitHubApiContentEntry = {
+  name: string;
+  type: string;
 };
 
 type GitHubApiRepoResponse = {
@@ -74,7 +94,7 @@ async function githubFetch<T>(path: string, token: string, init?: RequestInit): 
     try {
       const data = await response.json();
       if (data && typeof data.message === "string" && data.message.length > 0) {
-        message = data.message;
+        message = `GitHub API request failed (${response.status}): ${data.message}`;
       }
     } catch {
       // Ignore JSON parse issues and keep fallback error message.
@@ -123,8 +143,47 @@ export async function getGitHubStatus(): Promise<GitHubStatus> {
   }
 }
 
-/** List repositories the authenticated GitHub user has access to. */
-export async function listUserRepos(): Promise<GitHubRepo[]> {
+/**
+ * Returns true for errors that should surface to the caller (rate limits, auth failures)
+ * rather than being silently swallowed on a per-branch basis.
+ */
+function isRetryableGitHubError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const msg = error.message.toLowerCase();
+  return (
+    msg.includes("401") ||
+    msg.includes("403") ||
+    msg.includes("rate limit") ||
+    msg.includes("api rate limit exceeded")
+  );
+}
+
+/**
+ * Check the root directory of a branch for any .tf files.
+ * Used as a fallback when the recursive tree response is truncated.
+ * The contents listing is never truncated — it only covers one directory level.
+ */
+async function checkRootForTf(basePath: string, branchName: string, token: string): Promise<boolean> {
+  try {
+    const entries = await githubFetch<GitHubApiContentEntry[]>(
+      `${basePath}/contents?ref=${encodeURIComponent(branchName)}`,
+      token,
+    );
+    return Array.isArray(entries) && entries.some((e) => e.type === "file" && e.name.endsWith(".tf"));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * List repositories the authenticated GitHub user has access to.
+ *
+ * @param purpose
+ *   "import" — include all accessible repos (read access is sufficient).
+ *   "export" — restrict to repos where the user has push access (needed to open PRs / push branches).
+ *   Defaults to "import".
+ */
+export async function listUserRepos(purpose: "import" | "export" = "import"): Promise<GitHubRepo[]> {
   const token = await getGitHubToken();
   if (!token) {
     throw new GitHubNotConnectedError();
@@ -146,7 +205,7 @@ export async function listUserRepos(): Promise<GitHubRepo[]> {
   }
 
   return repos
-    .filter((repo) => repo.permissions?.push === true)
+    .filter((repo) => purpose === "export" ? repo.permissions?.push === true : true)
     .sort((a, b) => {
       const aDate = a.pushed_at ? Date.parse(a.pushed_at) : 0;
       const bDate = b.pushed_at ? Date.parse(b.pushed_at) : 0;
@@ -159,6 +218,72 @@ export async function listUserRepos(): Promise<GitHubRepo[]> {
       defaultBranch: repo.default_branch,
       htmlUrl: repo.html_url,
     }));
+}
+
+/** List branches of a repo that contain at least one .tf file. */
+export async function listRepoBranchesWithTf(repo: string): Promise<GitHubBranch[]> {
+  const token = await getGitHubToken();
+  if (!token) {
+    throw new GitHubNotConnectedError();
+  }
+
+  const parsed = parseRepo(repo);
+  if (!parsed) {
+    throw new Error("Invalid repository. Expected format: owner/repo");
+  }
+
+  const basePath = `/repos/${parsed.owner}/${parsed.name}`;
+
+  // Paginate branches — up to 1000 (10 pages × 100).
+  const branches: GitHubApiBranchResponse[] = [];
+  let branchPage = 1;
+  while (branchPage <= 10) {
+    const pageBranches = await githubFetch<GitHubApiBranchResponse[]>(
+      `${basePath}/branches?per_page=100&page=${branchPage}`,
+      token,
+    );
+    branches.push(...pageBranches);
+    if (pageBranches.length < 100) break;
+    branchPage += 1;
+  }
+
+  // Check each branch for .tf files, 5 at a time to avoid hammering the API.
+  const BATCH_SIZE = 5;
+  const results: (GitHubBranch | null)[] = [];
+
+  for (let i = 0; i < branches.length; i += BATCH_SIZE) {
+    const batch = branches.slice(i, i + BATCH_SIZE);
+    const batchResults = await Promise.all(
+      batch.map(async (branch) => {
+        try {
+          // Use the branch name as a ref — the tree endpoint accepts ref names directly.
+          // (branch.commit.sha is a commit SHA, not a tree SHA, and would fail.)
+          const tree = await githubFetch<GitHubApiTreeResponse>(
+            `${basePath}/git/trees/${encodeURIComponent(branch.name)}?recursive=1`,
+            token,
+          );
+
+          let hasTf: boolean;
+          if (!tree.truncated) {
+            hasTf = tree.tree.some((entry) => entry.type === "blob" && entry.path.endsWith(".tf"));
+          } else {
+            // Tree is truncated — recursive listing is incomplete. Fall back to checking
+            // the root directory via the contents API, which is never truncated.
+            hasTf = await checkRootForTf(basePath, branch.name, token);
+          }
+
+          return hasTf ? { name: branch.name, sha: branch.commit.sha } : null;
+        } catch (error) {
+          // Rate-limit or auth failures must surface so the user isn't shown "no branches found".
+          if (isRetryableGitHubError(error)) throw error;
+          return null;
+        }
+      }),
+    );
+    results.push(...batchResults);
+  }
+
+  return results.filter((b): b is GitHubBranch => b !== null);
 }
 
 /** Create a pull request on a GitHub repository. */
