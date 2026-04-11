@@ -18,7 +18,8 @@ model Session {
   model       String
   mermaidCode String    @default("") @map("mermaid_code")
   configYaml  String    @default("") @map("config_yaml")
-  githubRepo  String?   @map("github_repo")
+  githubRepo    String?   @map("github_repo")
+  githubBranch  String?   @map("github_branch")
   status      String    @default("active")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
