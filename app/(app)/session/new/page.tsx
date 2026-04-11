@@ -186,6 +186,7 @@ export default function NewSessionPage() {
       if (!res.ok) {
         const data = await res.json();
         setError(data.error || "Failed to create session");
+        setSubmitting(false);
         return;
       }
       const session = await res.json();
