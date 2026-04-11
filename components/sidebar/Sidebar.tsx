@@ -185,13 +185,13 @@ export default function Sidebar({ displayName, initials }: SidebarProps) {
   function handleCollapse() {
     // 1) Start fading text + shrinking width simultaneously
     setCollapsed(true);
-    // 2) After width animation finishes, swap to collapsed layout
+    // 2) After width animation finishes, hide expanded content
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => setShowExpanded(false), DURATION);
   }
 
   function handleExpand() {
-    // 1) Swap to expanded layout immediately (text starts invisible)
+    // 1) Restore expanded content immediately (text starts invisible)
     if (timerRef.current) clearTimeout(timerRef.current);
     setShowExpanded(true);
     // 2) Grow width (text fades in via CSS transition)
@@ -210,79 +210,38 @@ export default function Sidebar({ displayName, initials }: SidebarProps) {
     ? "opacity-0 transition-opacity duration-150"
     : "opacity-100 transition-opacity duration-150 delay-75";
 
-  if (!showExpanded) {
-    // ── Collapsed layout (clean icon-only) ──
-    return (
-      <aside
-        className="relative z-10 flex shrink-0 flex-col border-r border-[var(--border)] bg-[var(--surface)] transition-[width] duration-200 ease-in-out"
-        style={{ width: COLLAPSED_WIDTH }}
-      >
-        <div className="flex items-center justify-center py-2" style={{ minHeight: 44 }}>
-          <button
-            onClick={handleExpand}
-            className="flex h-[22px] w-[22px] items-center justify-center rounded-[5px] border border-[var(--border)] text-[var(--muted)] transition-colors hover:bg-[var(--surface2)] hover:text-[var(--text)]"
-            title="Expand sidebar"
-          >
-            {SIDEBAR_ICON}
-          </button>
-        </div>
-
-        <div className="flex justify-center px-2.5 py-2">
-          <Link
-            href="/session/new"
-            className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--text)] text-xs text-white"
-            title="New session"
-          >
-            +
-          </Link>
-        </div>
-
-        <div className="flex-1" />
-
-        <div className="relative" ref={menuRef}>
-          {menuOpen && (
-            <AccountMenu onLogout={handleLogout} onClose={() => setMenuOpen(false)} />
-          )}
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="flex w-full items-center py-3.5 transition-colors hover:bg-[var(--surface2)]"
-            title={displayName}
-          >
-            <div className="flex w-[48px] shrink-0 items-center justify-center">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--info-bg)] text-[9px] font-semibold text-[var(--info-text)]">
-                {initials}
-              </div>
-            </div>
-          </button>
-        </div>
-      </aside>
-    );
-  }
-
-  // ── Expanded layout (full content with fade transitions) ──
+  // Single layout — both expanded and collapsed states share one DOM tree.
+  // The toggle button uses position:absolute so it is completely independent of
+  // the flex layout and never moves or blinks during the width transition.
   return (
     <aside
       className="relative z-10 flex shrink-0 flex-col overflow-hidden border-r border-[var(--border)] bg-[var(--surface)] transition-[width] duration-200 ease-in-out"
       style={{ width: collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH }}
     >
-        {/* Header */}
-        <div className="flex items-center px-2.5 py-2" style={{ minHeight: 44 }}>
-          <Link href="/home" className={`flex items-center gap-1.5 text-[13px] font-semibold whitespace-nowrap ${textFade}`}>
+      {/* Header: relative container so the toggle button can be absolutely positioned */}
+      <div className="relative" style={{ minHeight: 44 }}>
+        {showExpanded && (
+          <Link
+            href="/home"
+            className={`absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-[13px] font-semibold whitespace-nowrap ${textFade}`}
+          >
             <ConjureLogo size={18} />
             <span>Conjure</span>
           </Link>
-          <div className="flex-1" />
-          <button
-            onClick={handleCollapse}
-            className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[5px] border border-[var(--border)] text-[var(--muted)] transition-colors hover:bg-[var(--surface2)] hover:text-[var(--text)] ${textFade}`}
-            title="Collapse sidebar"
-          >
-            {SIDEBAR_ICON}
-          </button>
-        </div>
+        )}
+        {/* Absolutely positioned — immune to flex layout shifts, never blinks */}
+        <button
+          onClick={showExpanded ? handleCollapse : handleExpand}
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 flex h-[22px] w-[22px] items-center justify-center rounded-[5px] border border-[var(--border)] text-[var(--muted)] transition-colors hover:bg-[var(--surface2)] hover:text-[var(--text)]"
+          title={showExpanded ? "Collapse sidebar" : "Expand sidebar"}
+        >
+          {SIDEBAR_ICON}
+        </button>
+      </div>
 
-        {/* New session button */}
-        <div className="px-2.5 py-2">
+      {/* New session button */}
+      <div className={`py-2 ${showExpanded ? "px-2.5" : "flex justify-center px-2.5"}`}>
+        {showExpanded ? (
           <Link
             href="/session/new"
             className="flex h-7 items-center rounded-md bg-[var(--text)] text-[11px] font-medium text-white transition-opacity hover:opacity-90"
@@ -291,9 +250,19 @@ export default function Sidebar({ displayName, initials }: SidebarProps) {
             <span className="flex h-7 w-7 shrink-0 items-center justify-center text-xs">+</span>
             <span className={`whitespace-nowrap pr-2 ${textFade}`}>New session</span>
           </Link>
-        </div>
+        ) : (
+          <Link
+            href="/session/new"
+            className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--text)] text-xs text-white"
+            title="New session"
+          >
+            +
+          </Link>
+        )}
+      </div>
 
-        {/* Session list */}
+      {/* Session list */}
+      {showExpanded ? (
         <div className="flex-1 overflow-x-hidden overflow-y-auto p-1.5">
           {sessions.length === 0 ? (
             <div className={`px-2 py-6 text-center text-[11px] leading-relaxed text-[var(--hint)] ${textFade}`}>
@@ -321,25 +290,45 @@ export default function Sidebar({ displayName, initials }: SidebarProps) {
             </div>
           )}
         </div>
+      ) : (
+        <div className="flex-1" />
+      )}
 
-        {/* Bottom: account */}
-        <div className="relative" ref={menuRef}>
-          {menuOpen && (
-            <AccountMenu onLogout={handleLogout} onClose={() => setMenuOpen(false)} />
-          )}
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="flex w-full items-center py-3.5 transition-colors hover:bg-[var(--surface2)]"
-            title={displayName}
-          >
-            <div className="flex w-[48px] shrink-0 items-center justify-center">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--info-bg)] text-[9px] font-semibold text-[var(--info-text)]">
-                {initials}
-              </div>
+      {/* Bottom: account */}
+      <div className="relative" ref={menuRef}>
+        {menuOpen && (
+          <AccountMenu onLogout={handleLogout} onClose={() => setMenuOpen(false)} />
+        )}
+        <button
+          onClick={() => setMenuOpen(!menuOpen)}
+          className="flex w-full items-center py-3.5 transition-colors hover:bg-[var(--surface2)]"
+          title={displayName}
+        >
+          <div className="flex w-[48px] shrink-0 items-center justify-center">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--info-bg)] text-[9px] font-semibold text-[var(--info-text)]">
+              {initials}
             </div>
-            <span className={`flex-1 truncate text-left text-[11px] font-medium whitespace-nowrap ${textFade}`}>{displayName}</span>
-          </button>
-        </div>
+          </div>
+          {showExpanded && (
+            <>
+              <span className={`flex-1 truncate text-left text-[11px] font-medium whitespace-nowrap ${textFade}`}>{displayName}</span>
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={`mr-3 shrink-0 text-[var(--hint)] transition-transform duration-150 ${menuOpen ? "rotate-180" : ""} ${textFade}`}
+              >
+                <polyline points="4 10 8 6 12 10" />
+              </svg>
+            </>
+          )}
+        </button>
+      </div>
     </aside>
   );
 }
