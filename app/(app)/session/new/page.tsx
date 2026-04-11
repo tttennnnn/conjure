@@ -7,7 +7,7 @@ import {
   type ModelOption,
   getAvailableModels,
 } from "@/lib/sessions/validation";
-import { type GitHubRepo, type GitHubStatus } from "@/lib/github/client";
+import { type GitHubBranch, type GitHubRepo, type GitHubStatus } from "@/lib/github/client";
 
 const ENV_OPTIONS = [
   { id: "aws" as const, name: "AWS", sub: "EC2, RDS, ElastiCache, VPC\u2026" },
@@ -67,6 +67,10 @@ export default function NewSessionPage() {
   const [githubRepos, setGithubRepos] = useState<GitHubRepo[]>([]);
   const [githubRepoError, setGithubRepoError] = useState<string | null>(null);
   const [selectedRepo, setSelectedRepo] = useState("");
+  const [githubBranches, setGithubBranches] = useState<GitHubBranch[]>([]);
+  const [githubBranchLoading, setGithubBranchLoading] = useState(false);
+  const [githubBranchError, setGithubBranchError] = useState<string | null>(null);
+  const [selectedBranch, setSelectedBranch] = useState("");
 
   useEffect(() => {
     async function loadModels() {
@@ -120,6 +124,48 @@ export default function NewSessionPage() {
     loadGitHubState();
   }, []);
 
+  useEffect(() => {
+    if (!selectedRepo) {
+      setGithubBranches([]);
+      setSelectedBranch("");
+      setGithubBranchError(null);
+      return;
+    }
+
+    const controller = new AbortController();
+
+    async function loadBranches() {
+      setGithubBranches([]);
+      setGithubBranchLoading(true);
+      setGithubBranchError(null);
+      setSelectedBranch("");
+      try {
+        const res = await fetch(
+          `/api/github/branches?repo=${encodeURIComponent(selectedRepo)}`,
+          { cache: "no-store", signal: controller.signal },
+        );
+        if (res.ok) {
+          const branches = (await res.json()) as GitHubBranch[];
+          setGithubBranches(branches);
+          if (branches.length === 0) {
+            setGithubBranchError("No branches with Terraform files found.");
+          }
+        } else {
+          setGithubBranchError("Failed to load branches");
+        }
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") {
+          setGithubBranchError("Failed to load branches");
+        }
+      } finally {
+        setGithubBranchLoading(false);
+      }
+    }
+
+    loadBranches();
+    return () => controller.abort();
+  }, [selectedRepo]);
+
   async function handleSubmit() {
     setError(null);
     setSubmitting(true);
@@ -134,6 +180,7 @@ export default function NewSessionPage() {
           iacTool,
           model: selectedModel,
           githubRepo: selectedRepo || undefined,
+          githubBranch: selectedBranch || undefined,
         }),
       });
       if (!res.ok) {
@@ -253,10 +300,53 @@ export default function NewSessionPage() {
                   <p className="text-[10px] text-[var(--danger-text)]">{githubRepoError}</p>
                 ) : (
                   <p className="text-[10px] text-[var(--muted)]">
-                    Repositories with push access are listed.
+                    Your repositories and those shared with you are listed.
                   </p>
                 )}
               </div>
+
+              {selectedRepo && (
+                <div className="flex flex-col gap-1">
+                  <label
+                    htmlFor="github-branch"
+                    className="text-[10px] font-semibold uppercase tracking-wide text-[var(--hint)]"
+                  >
+                    Branch (optional)
+                  </label>
+                  {githubBranchLoading ? (
+                    <div className="rounded-md border border-[var(--border)] bg-[var(--surface2)] px-2.5 py-2 text-[11px] text-[var(--muted)]">
+                      Scanning branches for Terraform files…
+                    </div>
+                  ) : (
+                    <select
+                      id="github-branch"
+                      value={selectedBranch}
+                      onChange={(e) => setSelectedBranch(e.target.value)}
+                      disabled={githubBranches.length === 0}
+                      className="w-full rounded-md border border-[var(--border)] bg-[var(--surface2)] px-2.5 py-2 text-[11px] text-[var(--text)] outline-none focus:border-[var(--text)] disabled:opacity-50"
+                    >
+                      <option value="">No branch (start fresh)</option>
+                      {githubBranches.map((b) => (
+                        <option key={b.sha} value={b.name}>
+                          {b.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  {githubBranchError ? (
+                    <p className="text-[10px] text-[var(--warn-text)]">{githubBranchError}</p>
+                  ) : !githubBranchLoading && (
+                    <p className="text-[10px] text-[var(--muted)]">
+                      Only branches with Terraform files are listed.
+                    </p>
+                  )}
+                  {selectedBranch && (
+                    <p className="text-[10px] text-[var(--warn-text)]">
+                      Existing .tf files won&apos;t be auto-imported yet. You can build on this repo and push changes later.
+                    </p>
+                  )}
+                </div>
+              )}
             </>
           ) : (
             <div className="rounded-[5px] bg-[var(--warn-bg)] px-2.5 py-1.5 text-[10px] text-[var(--warn-text)]">
