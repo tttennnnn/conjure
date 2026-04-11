@@ -39,7 +39,7 @@ When the diagram looks right, click **Generate Code** and Terraform HCL appears 
 - **Properties drawer**: click any node to see and edit its config inline
 - **Multi-provider**: AWS and GCP
 - **Free by default**: free LLM models via OpenRouter, no API key needed to start
-- **Bring your own key**: add your own OpenRouter or Anthropic API key for premium models
+- **Bring your own key**: add your own Anthropic API key for premium Claude models
 - **Export code**: download generated IaC as a .zip
 - **Session history**: all sessions saved and resumable
 
@@ -118,7 +118,7 @@ graph TD
     style Validate fill:#fee2e2,stroke:#dc2626
 ```
 
-**How it works:** Each user message triggers up to three LLM calls. **Call 0** (guardrail) classifies the input as infrastructure-related or off-topic: rejected messages never reach the main model, blocking prompt injection and misuse. **Call 1** takes the approved prompt plus the current Mermaid + Config YAML and generates updates with a chat explanation. **Call 2** is triggered separately by the "Generate Code" button, converting the full Mermaid + Config pair into Terraform HCL. All session data is persisted in Supabase Postgres with Row Level Security. Users start with free models via the app-provided OpenRouter key, and can bring their own OpenRouter or Anthropic key for premium models.
+**How it works:** Each user message triggers up to three LLM calls. **Call 0** (guardrail) classifies the input as infrastructure-related or off-topic: rejected messages never reach the main model, blocking prompt injection and misuse. **Call 1** takes the approved prompt plus the current Mermaid + Config YAML and generates updates with a chat explanation. **Call 2** is triggered separately by the "Generate Code" button, converting the full Mermaid + Config pair into Terraform HCL. All session data is persisted in Supabase Postgres with Row Level Security. Users start with free models via the app-provided OpenRouter key, and can bring their own Anthropic API key for premium Claude models.
 
 **Security boundaries:** Auth and Vault (amber) are the trust boundaries. Input Guardrails and Output Validation (red) are the LLM security layer. The browser only holds an HttpOnly session cookie; no secrets reach the client. Every API request is authenticated via JWT and scoped by Supabase RLS so users can only access their own data. Credentials and API keys are encrypted at rest in Vault and decrypted server-side only at the moment of use.
 
@@ -150,7 +150,7 @@ Conjure handles cloud credentials and infrastructure operations. Security is bui
 
 - **Authentication**: Supabase Auth with email/password and GitHub OAuth. All app routes are protected by middleware.
 - **Row Level Security**: every database table enforces RLS. Users can only access their own sessions, credentials, and data.
-- **Credential encryption**: AWS/GCP keys and user-provided LLM API keys (OpenRouter, Anthropic) are stored via Supabase Vault (encrypted at rest). Decrypted only server-side at the moment of use.
+- **Credential encryption**: AWS/GCP keys and user-provided LLM API keys (Anthropic) are stored via Supabase Vault (encrypted at rest). Decrypted only server-side at the moment of use.
 - **Input sanitization**: Mermaid diagrams rendered with `securityLevel: 'strict'`. YAML parsed in safe mode. LLM output treated as untrusted. Registration names trimmed and length-capped before storage.
 - **Server-side validation**: all API routes verify authentication and validate input. Session names (100-char cap), GitHub repo format (`owner/repo`), and enum fields (target env, IaC tool, model) are all validated server-side.
 - **No secrets in the browser**: only `NEXT_PUBLIC_*` env vars reach the client. Service keys, database URLs, and credentials are server-only.

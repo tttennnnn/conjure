@@ -53,6 +53,7 @@ Open [http://localhost:3000](http://localhost:3000).
 |---|---|
 | `npm run typecheck` | Before committing — catches TypeScript errors |
 | `npm run lint` | Before committing — catches code quality issues |
+| `npm test` | Run the Vitest test suite |
 | `docker compose up` | Start the dev server |
 | `docker compose up --build` | Start and rebuild — required after adding/removing packages |
 | `docker compose exec app bash` | Open a shell inside the running container |
@@ -72,10 +73,11 @@ Open [http://localhost:3000](http://localhost:3000).
 ```bash
 npm run typecheck    # type errors
 npm run lint         # code quality
+npm test             # unit tests
 docker compose exec -e NODE_ENV=production app npm run build  # full build
 ```
 
-All three should pass before opening a PR.
+All four should pass before opening a PR.
 
 ### 6. Schema changes
 
@@ -260,12 +262,16 @@ After pushing the schema with `prisma db push`, run `supabase/rls.sql` in the Su
 conjure/
 ├── Dockerfile.dev                     # Dev container (Node 20)
 ├── docker-compose.yml                 # Docker Compose config
+├── middleware.ts                      # Auth middleware (redirect + session refresh)
+├── vitest.config.ts                   # Vitest test configuration
 ├── .env.example                       # Environment variable template
 ├── package.json
 ├── tsconfig.json                      # TypeScript (strict mode)
 ├── prisma/
 │   └── schema.prisma                  # Database models
 ├── prisma.config.ts                   # Prisma 7 datasource config
+├── supabase/
+│   └── rls.sql                        # Row-Level Security policies (run after db push)
 ├── app/                               # Next.js App Router
 │   ├── layout.tsx                     # Root layout
 │   ├── page.tsx                       # Landing page
@@ -287,73 +293,91 @@ conjure/
 │   │       ├── layout.tsx             # Settings sub-navigation
 │   │       ├── api-keys/              # LLM API key management (implemented)
 │   │       ├── credentials/           # Cloud credential management
-│   │       └── github/                # GitHub OAuth connection
+│   │       └── github/                # GitHub OAuth connection (implemented)
 │   └── api/
 │       ├── api-keys/                  # LLM API key CRUD (implemented)
 │       ├── auth/
 │       │   ├── callback/              # OAuth callback handler (implemented)
 │       │   └── github/                # GitHub OAuth initiation (implemented)
 │       ├── chat/                      # Streaming chat with LLM (implemented)
+│       ├── github/
+│       │   ├── branches/              # List branches for a repo (implemented)
+│       │   ├── repos/                 # List user's GitHub repos (implemented)
+│       │   └── status/                # GitHub connection status (implemented)
 │       ├── models/                    # Available model list (implemented)
 │       ├── sessions/                  # Session list (implemented)
 │       │   └── [id]/                  # Session detail (implemented)
-│       ├── classify/                  # Prompt → topology / config / question
+│       ├── classify/                  # Prompt → topology / config / question (scaffold)
 │       ├── generate/
-│       │   ├── diagram/               # Call 1: prompt → Mermaid + Config
-│       │   └── code/                  # Call 2: Mermaid + Config → IaC (HCL)
+│       │   ├── diagram/               # Call 1: prompt → Mermaid + Config (scaffold)
+│       │   └── code/                  # Call 2: Mermaid + Config → IaC (HCL) (implemented)
 │       ├── deploy/
-│       │   ├── plan/                  # terraform plan
-│       │   └── apply/                 # terraform apply
-│       └── credentials/               # Credential profile management
+│       │   ├── plan/                  # terraform plan (scaffold)
+│       │   └── apply/                 # terraform apply (scaffold)
+│       └── credentials/               # Credential profile management (scaffold)
 ├── components/
 │   ├── auth/                          # Auth components (AuthBrandingPanel, OAuthButtons, SignOutButton)
 │   ├── settings/                      # Settings components (ApiKeyCard)
 │   ├── sidebar/                       # Sidebar with session list (implemented)
 │   ├── session/
 │   │   ├── SessionView.tsx            # Main session layout (implemented)
+│   │   ├── SessionTopbar.tsx          # Session name + status badges (implemented)
 │   │   ├── ChatPanel.tsx              # Chat messages display (implemented)
 │   │   ├── ChatInput.tsx              # Chat input with guardrails (implemented)
 │   │   ├── DiagramPanel.tsx           # Mermaid diagram rendering (implemented)
+│   │   ├── CodePanel.tsx              # Generated IaC viewer (implemented)
 │   │   ├── PropertiesDrawer/          # Click node → edit config
-│   │   ├── CodePanel/                 # Generated IaC viewer
-│   │   └── DeployPanel/               # Deploy config + plan/apply
+│   │   ├── DeployPanel/               # Deploy config + plan/apply (scaffold)
+│   │   └── hooks/
+│   │       ├── useSessionChat.ts      # Chat state + streaming (implemented)
+│   │       └── useCodeGeneration.ts   # Code generation state (implemented)
 │   └── ui/                            # Shared primitives (ConjureLogo)
 ├── lib/
 │   ├── prisma.ts                      # Prisma client singleton
+│   ├── rate-limit.ts                  # In-memory sliding window rate limiter (implemented)
+│   ├── api/
+│   │   ├── errors.ts                  # Typed API error helpers (implemented)
+│   │   ├── handler.ts                 # Route handler wrapper (auth + error handling) (implemented)
+│   │   └── resolve-key.ts             # Resolve user's LLM API key from Vault (implemented)
+│   ├── chat/
+│   │   └── process-message.ts         # Message classification + diagram update logic (implemented)
+│   ├── github/
+│   │   └── client.ts                  # GitHub REST API client (implemented)
 │   ├── llm/
 │   │   ├── client.ts                  # LLM SDK routing (OpenRouter / Anthropic) (implemented)
+│   │   ├── codegen.ts                 # Call 2 wrapper: Mermaid + Config → HCL (implemented)
 │   │   ├── guardrails.ts              # Input pre-filter (implemented)
 │   │   ├── parse.ts                   # LLM output parser (implemented)
 │   │   ├── types.ts                   # LLM type definitions (implemented)
 │   │   └── prompts/
-│   │       └── diagram.ts             # Diagram generation prompt (implemented)
+│   │       ├── diagram.ts             # Diagram generation prompt (implemented)
+│   │       └── codegen.ts             # Code generation prompt (implemented)
 │   ├── supabase/
 │   │   ├── auth.ts                    # Shared getAuthenticatedUserId helper (implemented)
 │   │   ├── client.ts                  # Browser Supabase client
 │   │   ├── server.ts                  # Server Supabase client
 │   │   └── middleware.ts              # Auth middleware helper
 │   ├── config/
+│   │   ├── node-yaml.ts               # Node ID extraction from Config YAML (implemented)
 │   │   ├── validate.ts                # Config YAML validation (implemented)
 │   │   └── sync.ts                    # Mermaid ↔ Config node ID sync (implemented)
 │   ├── mermaid/
 │   │   └── validate.ts                # Mermaid syntax validation (implemented)
-│   ├── rate-limit.ts                  # In-memory sliding window rate limiter (implemented)
 │   ├── sessions/
 │   │   └── validation.ts              # Session input validation (implemented)
 │   ├── utils/
-│   │   └── date-groups.ts             # Date grouping + relative time (implemented)
-│   ├── icons/                         # SVG icon registry for diagram nodes
-│   ├── terraform/                     # Plan/apply execution, HCL validation
+│   │   ├── date-groups.ts             # Date grouping + relative time (implemented)
+│   │   └── zip.ts                     # IaC file bundle for download (implemented)
 │   └── vault/
 │       └── api-keys.ts                # LLM API key Vault helpers (implemented)
-├── terraform-templates/               # Base IaC templates
-│   ├── aws/
-│   └── gcp/
 ├── tests/
-│   ├── llm/                           # LLM output parsing tests
+│   ├── api/                           # API helper tests (errors, handler)
 │   ├── config/                        # YAML ↔ Mermaid sync tests
-│   ├── mermaid/
-│   └── terraform/
+│   ├── llm/                           # LLM output parsing tests
+│   ├── mermaid/                       # Mermaid validation tests
+│   ├── routes/                        # API route handler tests
+│   ├── sessions/                      # Session validation tests
+│   └── vault/                         # Vault helper tests
 └── docs/
     ├── DEVELOPMENT.md                 # This file
     └── conjure-mockup-v3.html         # UI mockup (open in browser)
@@ -438,3 +462,5 @@ The mockup defines **layout and structure**. Aesthetics may be refined per-scree
 2. Mermaid ↔ Config node ID sync
 3. Prompt classifier (topology vs config vs question)
 4. Supabase Vault read/write for credentials
+5. API route handlers (auth enforcement, error responses)
+6. Session input validation (names, repo format, branch names)
