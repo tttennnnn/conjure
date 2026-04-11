@@ -8,6 +8,7 @@ import {
   isValidModel,
   sanitizeSessionName,
   isValidGithubRepo,
+  isValidGithubBranch,
 } from "@/lib/sessions/validation";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
@@ -20,10 +21,11 @@ export const POST = createHandler<{
   iacTool?: string;
   model?: string;
   githubRepo?: string;
+  githubBranch?: string;
 }>(
   { rateLimit: sessionsLimiter },
   async ({ userId, body }) => {
-    const { name, targetEnv, iacTool, model, githubRepo } = body;
+    const { name, targetEnv, iacTool, model, githubRepo, githubBranch } = body;
 
     if (!name || !targetEnv || !iacTool || !model) {
       return NextResponse.json(
@@ -68,6 +70,21 @@ export const POST = createHandler<{
       );
     }
 
+    if (githubBranch && !isValidGithubBranch(githubBranch)) {
+      return NextResponse.json(
+        { error: "Invalid githubBranch name" },
+        { status: 400 },
+      );
+    }
+
+    // Branch without repo is meaningless
+    if (githubBranch && !githubRepo) {
+      return NextResponse.json(
+        { error: "githubBranch requires githubRepo" },
+        { status: 400 },
+      );
+    }
+
     try {
       const session = await getPrisma().session.create({
         data: {
@@ -77,6 +94,7 @@ export const POST = createHandler<{
           iacTool,
           model,
           githubRepo: githubRepo || null,
+          githubBranch: githubBranch || null,
         },
       });
 
