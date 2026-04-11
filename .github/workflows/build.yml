@@ -25,6 +25,9 @@ jobs:
         env:
           DATABASE_URL: postgresql://placeholder:placeholder@localhost/placeholder
 
+      - name: Test
+        run: npm run test -- --run
+
       - name: Lint
         run: npm run lint
 
