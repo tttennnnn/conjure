@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getPrisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import SessionView from "@/components/session/SessionView";
+import type { EventKind } from "@/lib/chat/types";
 
 export default async function SessionPage({
   params,
@@ -53,10 +54,11 @@ export default async function SessionPage({
       }}
       initialMessages={session.messages.map((m) => ({
         id: m.id,
-        role: m.role as "user" | "assistant",
+        role: m.role,
         content: m.content,
         createdAt: m.createdAt.toISOString(),
-        diagramUpdated: m.diagramUpdated,
+        ...(m.eventKind != null && { eventKind: m.eventKind as EventKind }),
+        ...(m.diagramUpdated && { diagramUpdated: true }),
       }))}
     />
   );

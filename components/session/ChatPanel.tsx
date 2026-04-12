@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { ChatMessage, ChatEvent } from "./SessionView";
+import type { ChatMessage } from "./SessionView";
+import { EVENT_LABELS, type EventKind } from "@/lib/chat/types";
 
 interface ChatPanelProps {
-  messages: (ChatMessage | ChatEvent)[];
+  messages: ChatMessage[];
   isLoading: boolean;
 }
 
@@ -28,17 +29,28 @@ export default function ChatPanel({ messages, isLoading }: ChatPanelProps) {
       )}
 
       {messages.map((item) => {
-        if ("kind" in item) {
+        // Manual edit event rows → divider
+        if (item.eventKind) {
+          const label = EVENT_LABELS[item.eventKind as EventKind] ?? item.eventKind;
           return (
             <div key={item.id} className="flex items-center gap-2 py-0.5">
               <div className="h-px flex-1 bg-[var(--border)]" />
-              <span className="text-[10px] text-[var(--hint)]">✏ Config updated via properties panel</span>
+              <span className="text-[10px] text-[var(--hint)]">{label}</span>
               <div className="h-px flex-1 bg-[var(--border)]" />
             </div>
           );
         }
 
-        const isManualEdit = item.role === "user" && item.diagramUpdated;
+        // Legacy manual-edit user messages (old: role=user + diagramUpdated) → divider
+        if (item.role === "user" && item.diagramUpdated) {
+          return (
+            <div key={item.id} className="flex items-center gap-2 py-0.5">
+              <div className="h-px flex-1 bg-[var(--border)]" />
+              <span className="text-[10px] text-[var(--hint)]">diagram updated (manual edit)</span>
+              <div className="h-px flex-1 bg-[var(--border)]" />
+            </div>
+          );
+        }
 
         return (
           <div
@@ -49,23 +61,16 @@ export default function ChatPanel({ messages, isLoading }: ChatPanelProps) {
           >
             <div
               className={`max-w-[220px] px-2.5 py-[7px] text-[11px] leading-relaxed whitespace-pre-wrap ${
-                isManualEdit
-                  ? "rounded-[10px_10px_2px_10px] bg-[var(--info-text)] text-white"
-                  : item.role === "user"
-                    ? "rounded-[10px_10px_2px_10px] bg-[var(--text)] text-white"
-                    : "rounded-[10px_10px_10px_2px] bg-[var(--surface2)] text-[var(--text)]"
+                item.role === "user"
+                  ? "rounded-[10px_10px_2px_10px] bg-[var(--text)] text-white"
+                  : "rounded-[10px_10px_10px_2px] bg-[var(--surface2)] text-[var(--text)]"
               }`}
-              style={isManualEdit ? { fontSize: "10px" } : undefined}
             >
               {item.content}
             </div>
-            {item.diagramUpdated && (
-              <div className={`inline-flex items-center gap-1 rounded-[5px] px-2 py-[3px] text-[10px] font-medium ${
-                isManualEdit
-                  ? "bg-[var(--info-bg)] text-[var(--info-text)]"
-                  : "bg-[var(--purple-bg)] text-[var(--purple-text)]"
-              }`}>
-                {isManualEdit ? "✏ Diagram updated (manual edit)" : "↗ Diagram updated"}
+            {item.role === "assistant" && item.diagramUpdated && (
+              <div className="inline-flex items-center gap-1 rounded-[5px] bg-[var(--purple-bg)] px-2 py-[3px] text-[10px] font-medium text-[var(--purple-text)]">
+                ↗ diagram/config updated
               </div>
             )}
           </div>

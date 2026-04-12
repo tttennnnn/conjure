@@ -9,20 +9,9 @@ import PropertiesDrawer from "./PropertiesDrawer";
 import SessionTopbar from "./SessionTopbar";
 import { useSessionChat } from "./hooks/useSessionChat";
 import { useCodeGeneration } from "./hooks/useCodeGeneration";
+import type { ChatMessageData } from "@/lib/chat/types";
 
-export interface ChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  createdAt: string;
-  diagramUpdated?: boolean;
-}
-
-export interface ChatEvent {
-  id: string;
-  kind: "config-edit";
-  createdAt: string;
-}
+export type ChatMessage = ChatMessageData;
 
 interface SessionData {
   id: string;
@@ -43,6 +32,7 @@ interface SessionViewProps {
   session: SessionData;
   initialMessages: ChatMessage[];
 }
+
 
 export default function SessionView({ session, initialMessages }: SessionViewProps) {
   const [mermaidCode, setMermaidCode] = useState(session.mermaidCode);
@@ -78,8 +68,8 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
         });
         if (res.ok) {
           const data = await res.json();
-          if (data.editMessage) {
-            chat.setMessages((prev) => [...prev, data.editMessage]);
+          if (data.eventMessages?.length) {
+            chat.setMessages((prev) => [...prev, ...data.eventMessages]);
           }
           if (data.iacStale) codegen.markStale();
         }
@@ -162,13 +152,12 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
                 configYaml={configYaml}
                 sessionId={session.id}
                 onClose={() => setSelectedNodeId(null)}
-                onSaved={(newYaml, newIacStale) => {
+                onSaved={(newYaml, newIacStale, eventMessage) => {
                   setConfigYaml(newYaml);
                   if (newIacStale) codegen.markStale();
-                  chat.setMessages((prev) => [
-                    ...prev,
-                    { id: `props-${Date.now()}`, kind: "config-edit" as const, createdAt: new Date().toISOString() },
-                  ]);
+                  if (eventMessage) {
+                    chat.setMessages((prev) => [...prev, eventMessage]);
+                  }
                 }}
               />
             )}

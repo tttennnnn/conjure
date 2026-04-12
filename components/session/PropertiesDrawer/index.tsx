@@ -3,13 +3,14 @@
 import { useState, useEffect } from "react";
 import { parse } from "yaml";
 import { extractNodeYaml, replaceNodeInYaml } from "@/lib/config/node-yaml";
+import type { ChatMessageData } from "@/lib/chat/types";
 
 interface PropertiesDrawerProps {
   nodeId: string;
   configYaml: string;
   sessionId: string;
   onClose: () => void;
-  onSaved: (newConfigYaml: string, iacStale: boolean) => void;
+  onSaved: (newConfigYaml: string, iacStale: boolean, eventMessage: ChatMessageData | null) => void;
 }
 
 export default function PropertiesDrawer({
@@ -75,8 +76,8 @@ export default function PropertiesDrawer({
         setError((data as { error?: string }).error ?? "Failed to save");
         return;
       }
-      const data = await res.json() as { configYaml: string; iacStale: boolean };
-      onSaved(data.configYaml, data.iacStale);
+      const data = await res.json() as { configYaml: string; iacStale: boolean; eventMessages: ChatMessageData[] };
+      onSaved(data.configYaml, data.iacStale, data.eventMessages?.[0] ?? null);
     } catch {
       setError("Network error. Please try again.");
     } finally {

@@ -1,12 +1,12 @@
 import { useState, useCallback } from "react";
-import type { ChatMessage, ChatEvent } from "../SessionView";
+import type { ChatMessage } from "../SessionView";
 
 export function useSessionChat(
   sessionId: string,
-  initialMessages: (ChatMessage | ChatEvent)[],
+  initialMessages: ChatMessage[],
   onDiagramChanged: () => void,
 ) {
-  const [messages, setMessages] = useState<(ChatMessage | ChatEvent)[]>(initialMessages);
+  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [isLoading, setIsLoading] = useState(false);
 
   const sendMessage = useCallback(
