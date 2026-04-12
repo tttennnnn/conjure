@@ -70,3 +70,26 @@ export function createGetHandler(
     return handler({ userId, request, params });
   };
 }
+
+/** Wrap a DELETE handler with auth and optional rate limiting. No body parsing. */
+export function createDeleteHandler(
+  config: { rateLimit?: RateLimiter },
+  handler: (ctx: GetHandlerContext) => Promise<NextResponse>,
+) {
+  return async (request: Request, routeCtx: RouteContext): Promise<NextResponse> => {
+    const userId = await getAuthenticatedUserId();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (config.rateLimit) {
+      const limit = config.rateLimit(userId);
+      if (!limit.success) {
+        return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+      }
+    }
+
+    const params = await routeCtx.params;
+    return handler({ userId, request, params });
+  };
+}

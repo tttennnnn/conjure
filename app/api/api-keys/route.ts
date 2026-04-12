@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { createHandler, createGetHandler } from "@/lib/api/handler";
+import { createHandler, createGetHandler, createDeleteHandler } from "@/lib/api/handler";
 import {
   deleteApiKey,
   getApiKey,
@@ -70,7 +70,7 @@ export const POST = createHandler<{ provider?: string; key?: string }>(
   },
 );
 
-export const DELETE = createHandler<Record<string, never>>(
+export const DELETE = createDeleteHandler(
   { rateLimit: apiKeysLimiter },
   async ({ userId, request }) => {
     const { searchParams } = new URL(request.url);

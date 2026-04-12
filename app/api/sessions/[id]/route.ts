@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { createHandler, createGetHandler } from "@/lib/api/handler";
+import { createHandler, createGetHandler, createDeleteHandler } from "@/lib/api/handler";
 import { getPrisma } from "@/lib/prisma";
 import { validateConfigYaml } from "@/lib/config/validate";
 import { sanitizeSessionName } from "@/lib/sessions/validation";
@@ -99,7 +99,7 @@ export const PATCH = createHandler<{ configYaml?: unknown; name?: unknown; merma
   },
 );
 
-export const DELETE = createHandler<Record<string, never>>(
+export const DELETE = createDeleteHandler(
   {},
   async ({ userId, params }) => {
     const id = params.id!;

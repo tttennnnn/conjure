@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createHandler, createGetHandler } from "@/lib/api/handler";
+import { createHandler, createGetHandler, createDeleteHandler } from "@/lib/api/handler";
 import { getAuthenticatedUserId } from "@/lib/supabase/auth";
 
 vi.mock("@/lib/supabase/auth", () => ({
@@ -99,5 +99,48 @@ describe("createGetHandler", () => {
     // GetHandlerContext has no body field
     const callArg = inner.mock.calls[0]?.[0] as Record<string, unknown>;
     expect(callArg).not.toHaveProperty("body");
+  });
+});
+
+describe("createDeleteHandler", () => {
+  it("returns 401 when unauthenticated", async () => {
+    mockAuth.mockResolvedValue(null);
+    const handler = createDeleteHandler({}, async () => {
+      throw new Error("should not reach");
+    });
+    const res = await handler(
+      new Request("http://localhost/api/test?id=123", { method: "DELETE" }),
+      routeCtx,
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("works with bodyless request", async () => {
+    const inner = vi.fn().mockImplementation(async ({ userId }) => {
+      return new Response(JSON.stringify({ userId }), { status: 200 });
+    });
+    const handler = createDeleteHandler({}, inner);
+    const res = await handler(
+      new Request("http://localhost/api/test?id=123", { method: "DELETE" }),
+      routeCtx,
+    );
+    expect(res.status).toBe(200);
+    expect(inner).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: "test-user-id" }),
+    );
+    const callArg = inner.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(callArg).not.toHaveProperty("body");
+  });
+
+  it("returns 429 when rate limited", async () => {
+    const rateLimiter = () => ({ success: false });
+    const handler = createDeleteHandler({ rateLimit: rateLimiter }, async () => {
+      throw new Error("should not reach");
+    });
+    const res = await handler(
+      new Request("http://localhost/api/test?id=123", { method: "DELETE" }),
+      routeCtx,
+    );
+    expect(res.status).toBe(429);
   });
 });

@@ -155,4 +155,15 @@ describe("DELETE /api/api-keys", () => {
     const res = await DELETE(req, routeCtx);
     expect(res.status).toBe(400);
   });
+
+  it("deletes existing key with bodyless request (browser behavior)", async () => {
+    const req = new Request(
+      "http://localhost/api/api-keys?provider=anthropic",
+      { method: "DELETE" },
+    );
+    const res = await DELETE(req, routeCtx);
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.deleted).toBe(true);
+  });
 });

@@ -62,10 +62,18 @@ export async function storeApiKey(
     });
     if (error) throw new Error(`Failed to update secret in Vault: ${error.message}`);
 
-    await getPrisma().userApiKey.update({
-      where: { id: existing.id },
-      data: { updatedAt: new Date() },
-    });
+    try {
+      await getPrisma().userApiKey.update({
+        where: { id: existing.id },
+        data: { updatedAt: new Date() },
+      });
+    } catch (prismaError) {
+      console.error(
+        "Prisma update failed after Vault update succeeded:",
+        prismaError,
+      );
+      throw prismaError;
+    }
   } else {
     // Create new Vault secret
     const { data, error } = await supabase.rpc("vault_create_secret", {
@@ -74,13 +82,34 @@ export async function storeApiKey(
     });
     if (error) throw new Error(`Failed to store secret in Vault: ${error.message}`);
 
-    await getPrisma().userApiKey.create({
-      data: {
-        userId,
-        provider,
-        encryptedKey: data as string,
-      },
-    });
+    try {
+      await getPrisma().userApiKey.create({
+        data: {
+          userId,
+          provider,
+          encryptedKey: data as string,
+        },
+      });
+    } catch (prismaError) {
+      // Compensating rollback: remove the orphaned Vault secret
+      try {
+        const { error: rollbackError } = await supabase.rpc("vault_delete_secret", {
+          secret_id: data,
+        });
+        if (rollbackError) {
+          console.error(
+            "Failed to roll back Vault secret after Prisma failure — secret may be orphaned:",
+            rollbackError,
+          );
+        }
+      } catch (rollbackError) {
+        console.error(
+          "Failed to roll back Vault secret after Prisma failure — secret may be orphaned:",
+          rollbackError,
+        );
+      }
+      throw prismaError;
+    }
   }
 }
 
@@ -114,11 +143,24 @@ export async function deleteApiKey(
   if (!existing) return false;
 
   const supabase = getServiceClient();
-  await supabase.rpc("vault_delete_secret", {
+  const { error: vaultError } = await supabase.rpc("vault_delete_secret", {
     secret_id: existing.encryptedKey,
   });
+  if (vaultError) {
+    console.error("Failed to delete Vault secret:", vaultError);
+    throw new Error("Failed to delete API key from Vault");
+  }
 
-  await getPrisma().userApiKey.delete({ where: { id: existing.id } });
+  try {
+    await getPrisma().userApiKey.delete({ where: { id: existing.id } });
+  } catch (prismaError) {
+    console.error(
+      "Vault secret deleted but DB row delete failed — key row may be stuck with a dead secret reference:",
+      prismaError,
+    );
+    throw prismaError;
+  }
+
   return true;
 }
 
