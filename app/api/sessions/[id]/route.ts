@@ -5,6 +5,7 @@ import { getPrisma } from "@/lib/prisma";
 import { validateConfigYaml } from "@/lib/config/validate";
 import { sanitizeSessionName } from "@/lib/sessions/validation";
 import { NextResponse } from "next/server";
+import type { ChatMessageData, EventKind } from "@/lib/chat/types";
 
 export const GET = createGetHandler({}, async ({ userId, params }) => {
   const id = params.id!;
@@ -76,17 +77,23 @@ export const PATCH = createHandler<{ configYaml?: unknown; name?: unknown; merma
     const prisma = getPrisma();
     const updated = await prisma.session.update({ where: { id }, data: updateData });
 
-    // When mermaidCode is saved via manual edit, persist a Message record
-    let editMessage = null;
-    if (mermaidCode !== undefined) {
-      editMessage = await prisma.message.create({
-        data: {
-          sessionId: id,
-          role: "user",
-          content: "Edited diagram via edit mode",
-          diagramUpdated: true,
-        },
-      });
+    // Best-effort event logging — don't fail the PATCH response if this throws
+    const eventMessages: ChatMessageData[] = [];
+    try {
+      if (mermaidCode !== undefined) {
+        const ev = await prisma.message.create({
+          data: { sessionId: id, role: "event", content: "", eventKind: "diagram-updated-manual" satisfies EventKind },
+        });
+        eventMessages.push({ id: ev.id, role: ev.role, content: ev.content, createdAt: ev.createdAt.toISOString(), eventKind: ev.eventKind as EventKind });
+      }
+      if (configYaml !== undefined) {
+        const ev = await prisma.message.create({
+          data: { sessionId: id, role: "event", content: "", eventKind: "config-updated-manual" satisfies EventKind },
+        });
+        eventMessages.push({ id: ev.id, role: ev.role, content: ev.content, createdAt: ev.createdAt.toISOString(), eventKind: ev.eventKind as EventKind });
+      }
+    } catch (eventErr) {
+      console.error("Failed to log event message:", eventErr);
     }
 
     return NextResponse.json({
@@ -94,7 +101,7 @@ export const PATCH = createHandler<{ configYaml?: unknown; name?: unknown; merma
       configYaml: updated.configYaml,
       mermaidCode: updated.mermaidCode,
       iacStale: updated.iacStale,
-      editMessage,
+      eventMessages,
     });
   },
 );
