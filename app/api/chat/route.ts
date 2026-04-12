@@ -35,6 +35,7 @@ export const POST = createHandler<{ sessionId?: string; message?: string }>(
       where: { id: sessionId },
       include: {
         messages: {
+          where: { eventKind: null },
           orderBy: { createdAt: "desc" },
           take: MAX_HISTORY_MESSAGES,
         },
