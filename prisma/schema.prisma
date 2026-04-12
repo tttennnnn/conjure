@@ -36,6 +36,7 @@ model Message {
   role           String
   content        String
   diagramUpdated Boolean  @default(false) @map("diagram_updated")
+  eventKind      String?  @map("event_kind")
   createdAt      DateTime @default(now()) @map("created_at")
   session        Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
