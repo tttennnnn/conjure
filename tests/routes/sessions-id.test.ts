@@ -21,8 +21,8 @@ const mockDelete = vi.fn();
 const mockUpdate = vi.fn();
 const mockCreate = vi.fn();
 
-vi.mock("@/lib/prisma", () => ({
-  getPrisma: vi.fn().mockReturnValue({
+vi.mock("@/lib/prisma", () => {
+  const prisma = {
     session: {
       findUnique: (...args: unknown[]) => mockFindUnique(...args),
       delete: (...args: unknown[]) => mockDelete(...args),
@@ -31,8 +31,10 @@ vi.mock("@/lib/prisma", () => ({
     message: {
       create: (...args: unknown[]) => mockCreate(...args),
     },
-  }),
-}));
+    $transaction: (fn: (tx: unknown) => unknown) => fn(prisma),
+  };
+  return { getPrisma: vi.fn().mockReturnValue(prisma) };
+});
 
 import { GET, PATCH, DELETE } from "@/app/api/sessions/[id]/route";
 
@@ -59,7 +61,7 @@ beforeEach(() => {
   mockFindUnique.mockResolvedValue(existingSession);
   mockDelete.mockResolvedValue(existingSession);
   mockUpdate.mockResolvedValue({ ...existingSession, name: "Updated" });
-  mockCreate.mockResolvedValue({ id: "msg-1", content: "Edited diagram via edit mode" });
+  mockCreate.mockResolvedValue({ id: "msg-1", role: "event", content: "", eventKind: "diagram-updated-manual", createdAt: new Date("2026-01-01") });
 });
 
 // ---------------------------------------------------------------------------
