@@ -1,0 +1,17 @@
+{
+  "name": "conjure-deploy-service",
+  "version": "1.0.0",
+  "description": "Terraform plan/apply execution backend for Conjure",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "uuid": "^10.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
