@@ -59,6 +59,9 @@ export const POST = createHandler<{ sessionId?: string }>(
         data: {
           iacCode: files as unknown as Record<string, string>,
           iacStale: false,
+          // New code invalidates any prior plan — apply must not run against a different code version
+          lastPlanStatus: null,
+          lastApplyStatus: null,
         },
       });
 

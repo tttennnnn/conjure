@@ -8,7 +8,7 @@ export function useCodeGeneration(
   const [iacCode, setIacCode] = useState<IacFiles | null>(initial.iacCode);
   const [iacStale, setIacStale] = useState(initial.iacStale);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [activeTab, setActiveTab] = useState<"diagram" | "code">("diagram");
+  const [activeTab, setActiveTab] = useState<"diagram" | "code" | "deploy">("diagram");
 
   const generateCode = useCallback(async () => {
     setIsGenerating(true);
