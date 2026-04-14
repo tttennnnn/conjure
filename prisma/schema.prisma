@@ -23,9 +23,17 @@ model Session {
   status      String    @default("active")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
-  iacCode     Json?     @map("iac_code")
-  iacStale    Boolean   @default(false) @map("iac_stale")
-  messages    Message[]
+  iacCode        Json?     @map("iac_code")
+  iacStale       Boolean   @default(false) @map("iac_stale")
+  deployJobId    String?   @map("deploy_job_id")
+  lastPlanStatus String?   @map("last_plan_status")
+  lastPlanOutput String?   @map("last_plan_output") @db.Text
+  applyJobId     String?   @map("apply_job_id")
+  lastApplyStatus String?  @map("last_apply_status")
+  lastApplyOutput String?  @map("last_apply_output") @db.Text
+  stateBackend   Json?     @map("state_backend")
+  planRegion     String?   @map("plan_region")
+  messages       Message[]
 
   @@map("sessions")
 }
