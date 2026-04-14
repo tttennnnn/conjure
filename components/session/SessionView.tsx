@@ -5,6 +5,7 @@ import ChatPanel from "./ChatPanel";
 import ChatInput from "./ChatInput";
 import DiagramPanel from "./DiagramPanel";
 import CodePanel, { type IacFiles } from "./CodePanel";
+import DeployPanel from "./DeployPanel";
 import PropertiesDrawer from "./PropertiesDrawer";
 import SessionTopbar from "./SessionTopbar";
 import { useSessionChat } from "./hooks/useSessionChat";
@@ -26,6 +27,13 @@ interface SessionData {
   iacStale: boolean;
   githubRepo: string | null;
   githubBranch: string | null;
+  lastPlanStatus: string | null;
+  lastPlanOutput: string | null;
+  lastApplyStatus: string | null;
+  lastApplyOutput: string | null;
+  stateBackend: Record<string, unknown> | null;
+  deployJobId: string | null;
+  applyJobId: string | null;
 }
 
 interface SessionViewProps {
@@ -109,7 +117,7 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
         <div className="flex flex-1 flex-col min-w-0">
           {codegen.iacCode && (
             <div className="flex h-[38px] shrink-0 items-end border-b border-[var(--border)] bg-[var(--surface)] px-2.5">
-              {(["diagram", "code"] as const).map((tab) => (
+              {(["diagram", "code", "deploy"] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => codegen.setActiveTab(tab)}
@@ -138,11 +146,25 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
                 onEditSave={handleEditSave}
                 onNodeClick={setSelectedNodeId}
               />
-            ) : (
+            ) : codegen.activeTab === "code" ? (
               <CodePanel
                 iacCode={codegen.iacCode}
                 isStale={codegen.iacStale}
                 iacTool={session.iacTool}
+              />
+            ) : (
+              <DeployPanel
+                sessionId={session.id}
+                targetEnv={session.targetEnv}
+                iacCode={codegen.iacCode}
+                isStale={codegen.iacStale}
+                lastPlanStatus={session.lastPlanStatus}
+                lastPlanOutput={session.lastPlanOutput}
+                lastApplyStatus={session.lastApplyStatus}
+                lastApplyOutput={session.lastApplyOutput}
+                stateBackend={session.stateBackend}
+                deployJobId={session.deployJobId}
+                applyJobId={session.applyJobId}
               />
             )}
 

@@ -51,6 +51,13 @@ export default async function SessionPage({
         iacStale: session.iacStale,
         githubRepo: session.githubRepo,
         githubBranch: session.githubBranch,
+        lastPlanStatus: session.lastPlanStatus,
+        lastPlanOutput: session.lastPlanOutput,
+        lastApplyStatus: session.lastApplyStatus,
+        lastApplyOutput: session.lastApplyOutput,
+        stateBackend: (session.stateBackend as Record<string, unknown>) ?? null,
+        deployJobId: session.deployJobId,
+        applyJobId: session.applyJobId,
       }}
       initialMessages={session.messages.map((m) => ({
         id: m.id,
