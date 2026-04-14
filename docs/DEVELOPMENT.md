@@ -34,6 +34,8 @@ Fill in `.env.local`:
 | `SUPABASE_SERVICE_ROLE_KEY` | Same page → `service_role` key (keep secret) |
 | `OPENROUTER_API_KEY` | [openrouter.ai/keys](https://openrouter.ai/keys) → create a key |
 | `DATABASE_URL` | Supabase dashboard → Settings → Database → Connection string (URI) |
+| `DEPLOY_SERVICE_URL` | URL of the deployed deploy service (e.g. Railway app URL) |
+| `DEPLOY_SERVICE_API_KEY` | Shared secret between Vercel and the deploy service — set the same value in both |
 
 ### 3. Start the dev server
 
@@ -192,8 +194,6 @@ Defence is layered — no single layer is assumed to be sufficient.
 
 ### Deploy error handling
 
-> **Planned — not yet implemented.** This section describes the target design for deploy functionality.
-
 After code is generated, users can deploy via three paths with different levels of observability:
 
 | Path | Conjure visibility | Notes |
@@ -312,8 +312,10 @@ conjure/
 │       │   ├── diagram/               # Call 1: prompt → Mermaid + Config (scaffold)
 │       │   └── code/                  # Call 2: Mermaid + Config → IaC (HCL) (implemented)
 │       ├── deploy/
-│       │   ├── plan/                  # terraform plan (scaffold)
-│       │   └── apply/                 # terraform apply (scaffold)
+│       │   ├── plan/                  # terraform plan — dispatch job to deploy service (implemented)
+│       │   │   └── status/            # poll plan job status (implemented)
+│       │   └── apply/                 # terraform apply — dispatch job to deploy service (implemented)
+│       │       └── status/            # poll apply job status (implemented)
 │       └── credentials/               # Credential profile management (scaffold)
 ├── components/
 │   ├── auth/                          # Auth components (AuthBrandingPanel, OAuthButtons, SignOutButton)
@@ -326,11 +328,13 @@ conjure/
 │   │   ├── ChatInput.tsx              # Chat input with guardrails (implemented)
 │   │   ├── DiagramPanel.tsx           # Mermaid diagram rendering (implemented)
 │   │   ├── CodePanel.tsx              # Generated IaC viewer (implemented)
-│   │   ├── PropertiesDrawer/          # Click node → edit config
-│   │   ├── DeployPanel/               # Deploy config + plan/apply (scaffold)
+│   │   ├── PropertiesDrawer/          # Click node → edit config (implemented)
+│   │   ├── DeployPanel.tsx            # Deploy config + plan/apply UI (implemented)
 │   │   └── hooks/
 │   │       ├── useSessionChat.ts      # Chat state + streaming (implemented)
-│   │       └── useCodeGeneration.ts   # Code generation state (implemented)
+│   │       ├── useCodeGeneration.ts   # Code generation state (implemented)
+│   │       ├── useDeployPlan.ts       # Plan dispatch + job polling (implemented)
+│   │       └── useDeployApply.ts      # Apply dispatch + job polling (implemented)
 │   └── ui/                            # Shared primitives (ConjureLogo)
 ├── lib/
 │   ├── prisma.ts                      # Prisma client singleton
@@ -369,7 +373,8 @@ conjure/
 │   │   ├── date-groups.ts             # Date grouping + relative time (implemented)
 │   │   └── zip.ts                     # IaC file bundle for download (implemented)
 │   └── vault/
-│       └── api-keys.ts                # LLM API key Vault helpers (implemented)
+│       ├── api-keys.ts                # LLM API key Vault helpers (implemented)
+│       └── credentials.ts             # Cloud credential profile Vault helpers (implemented)
 ├── tests/
 │   ├── api/                           # API helper tests (errors, handler)
 │   ├── config/                        # YAML ↔ Mermaid sync tests
@@ -378,6 +383,10 @@ conjure/
 │   ├── routes/                        # API route handler tests
 │   ├── sessions/                      # Session validation tests
 │   └── vault/                         # Vault helper tests
+├── deploy-service/                    # Standalone Node.js service — runs terraform
+│   ├── server.js                      # Express app: /jobs/plan, /jobs/apply, /jobs/:id
+│   ├── package.json
+│   └── Dockerfile                     # Deploys to Railway (or any container host)
 └── docs/
     ├── DEVELOPMENT.md                 # This file
     └── conjure-mockup-v3.html         # UI mockup (open in browser)
