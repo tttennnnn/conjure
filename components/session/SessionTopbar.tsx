@@ -110,8 +110,8 @@ export default function SessionTopbar({
       <div className="flex gap-1.5">
         <span className={`rounded border px-1.5 py-0.5 text-[10px] font-medium ${
           targetEnv.toLowerCase() === "aws"
-            ? "border-[var(--warning-border)] bg-[var(--warn-bg)] text-[var(--warn-text)]"
-            : "border-[var(--info-bg)] bg-[var(--info-bg)] text-[var(--info-text)]"
+            ? "border-[var(--warning-border)] bg-[var(--warning-bg)] text-[var(--warning-text)]"
+            : "border-[var(--info-text)]/25 bg-[var(--info-bg)] text-[var(--info-text)]"
         }`}>
           {targetEnv.toUpperCase()}
         </span>

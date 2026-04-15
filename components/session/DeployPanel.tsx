@@ -7,6 +7,12 @@ import { downloadAsZip } from "@/lib/utils/zip";
 import type { IacFiles } from "./CodePanel";
 import type { CredentialProfileSummary } from "@/lib/vault/credentials";
 
+// Terminal output panel colors — intentionally dark (shell aesthetic)
+const TERMINAL_BG = "#0d1117";
+const TERMINAL_TEXT = "#e6edf3";
+const TERMINAL_BORDER = "#30363d";
+const TERMINAL_MUTED = "#8b949e";
+
 interface DeployPanelProps {
   sessionId: string;
   targetEnv: string;
@@ -217,7 +223,7 @@ export default function DeployPanel({
     <div className="flex flex-1 flex-col min-w-0 bg-[var(--bg)] overflow-auto">
       {/* Stale banner */}
       {isStale && (
-        <div className="shrink-0 border-b border-[var(--warning-border,#f59e0b)] bg-[var(--warning-bg,#fef3c7)] px-4 py-2 text-[11px] text-[var(--warning-text,#92400e)]">
+        <div className="shrink-0 border-b border-[var(--warning-border)] bg-[var(--warning-bg)] px-4 py-2 text-[11px] text-[var(--warning-text)]">
           Diagram or config has changed — regenerate code before running plan.
         </div>
       )}
@@ -424,7 +430,7 @@ export default function DeployPanel({
                 className={[
                   "rounded px-3 py-1 text-[11px] font-medium transition-colors",
                   canApply
-                    ? "bg-emerald-600 text-white hover:opacity-90"
+                    ? "bg-[var(--success-text)] text-white hover:opacity-90"
                     : "bg-[var(--surface2)] text-[var(--muted)] cursor-not-allowed",
                 ].join(" ")}
               >
@@ -435,21 +441,22 @@ export default function DeployPanel({
 
           {/* Plan error banner */}
           {plan.status === "failed" && plan.error && (
-            <div className="mb-2 rounded border border-red-300 bg-red-50 px-3 py-2 text-[11px] text-red-700">
+            <div className="mb-2 rounded border border-[var(--danger-text)]/25 bg-[var(--danger-bg)] px-3 py-2 text-[11px] text-[var(--danger-text)]">
               {plan.error}
             </div>
           )}
 
           {/* Plan output panel */}
           {(plan.output || plan.isRunning || plan.status) && (
-            <div className="mb-3 rounded-md border border-[var(--border)] bg-[#0d1117] overflow-hidden">
-              <div className="flex items-center justify-between border-b border-[#30363d] px-3 py-1.5">
-                <span className="text-[10px] text-[#8b949e] font-mono">terraform plan</span>
+            <div className="mb-3 rounded-md border border-[var(--border)] overflow-hidden" style={{ backgroundColor: TERMINAL_BG }}>
+              <div className="flex items-center justify-between px-3 py-1.5" style={{ borderBottom: `1px solid ${TERMINAL_BORDER}` }}>
+                <span className="font-mono text-[10px]" style={{ color: TERMINAL_MUTED }}>terraform plan</span>
                 <StatusPill status={plan.status} />
               </div>
               <pre
                 ref={planOutputRef}
-                className="max-h-80 overflow-auto p-3 text-[11px] leading-relaxed text-[#e6edf3] font-mono whitespace-pre-wrap"
+                className="max-h-80 overflow-auto p-3 text-[11px] leading-relaxed font-mono whitespace-pre-wrap"
+                style={{ color: TERMINAL_TEXT }}
               >
                 {plan.output || (plan.isRunning ? "Initializing…" : "")}
               </pre>
@@ -458,21 +465,22 @@ export default function DeployPanel({
 
           {/* Apply error banner */}
           {apply.status === "failed" && apply.error && (
-            <div className="mb-2 rounded border border-red-300 bg-red-50 px-3 py-2 text-[11px] text-red-700">
+            <div className="mb-2 rounded border border-[var(--danger-text)]/25 bg-[var(--danger-bg)] px-3 py-2 text-[11px] text-[var(--danger-text)]">
               {apply.error}
             </div>
           )}
 
           {/* Apply output panel */}
           {(apply.output || apply.isRunning || apply.status) && (
-            <div className="rounded-md border border-[var(--border)] bg-[#0d1117] overflow-hidden">
-              <div className="flex items-center justify-between border-b border-[#30363d] px-3 py-1.5">
-                <span className="text-[10px] text-[#8b949e] font-mono">terraform apply</span>
+            <div className="rounded-md border border-[var(--border)] overflow-hidden" style={{ backgroundColor: TERMINAL_BG }}>
+              <div className="flex items-center justify-between px-3 py-1.5" style={{ borderBottom: `1px solid ${TERMINAL_BORDER}` }}>
+                <span className="font-mono text-[10px]" style={{ color: TERMINAL_MUTED }}>terraform apply</span>
                 <StatusPill status={apply.status} />
               </div>
               <pre
                 ref={applyOutputRef}
-                className="max-h-80 overflow-auto p-3 text-[11px] leading-relaxed text-[#e6edf3] font-mono whitespace-pre-wrap"
+                className="max-h-80 overflow-auto p-3 text-[11px] leading-relaxed font-mono whitespace-pre-wrap"
+                style={{ color: TERMINAL_TEXT }}
               >
                 {apply.output || (apply.isRunning ? "Initializing…" : "")}
               </pre>
@@ -554,7 +562,7 @@ export default function DeployPanel({
                         "rounded px-3 py-1 text-[11px] font-medium transition-colors self-start",
                         ghExportStatus === "pushing" || isStale || !ghBranch.trim()
                           ? "bg-[var(--surface2)] text-[var(--muted)] cursor-not-allowed"
-                          : "bg-[var(--accent,#6366f1)] text-white hover:opacity-90",
+                          : "bg-[var(--accent)] text-white hover:opacity-90",
                       ].join(" ")}
                     >
                       {ghExportStatus === "pushing" ? "Pushing…" : "Push to GitHub"}
@@ -564,7 +572,7 @@ export default function DeployPanel({
 
                 {/* Result feedback */}
                 {ghExportStatus === "success" && ghExportResult && (
-                  <div className="rounded border border-[var(--success-bg,#dcfce7)] bg-[var(--success-bg,#dcfce7)] px-3 py-2 text-[11px] text-[var(--success-text,#16a34a)] flex flex-col gap-1">
+                  <div className="rounded border border-[var(--success-text)]/25 bg-[var(--success-bg)] px-3 py-2 text-[11px] text-[var(--success-text)] flex flex-col gap-1">
                     <span>Pushed successfully ({ghExportResult.sha?.slice(0, 7)})</span>
                     {ghExportResult.prUrl && (
                       <a
@@ -577,14 +585,14 @@ export default function DeployPanel({
                       </a>
                     )}
                     {ghExportResult.error && (
-                      <span className="text-[var(--warn-text,#92400e)]">
+                      <span className="text-[var(--warning-text)]">
                         Push succeeded but PR creation failed: {ghExportResult.error}
                       </span>
                     )}
                   </div>
                 )}
                 {ghExportStatus === "error" && ghExportResult?.error && (
-                  <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-[11px] text-red-700">
+                  <div className="rounded border border-[var(--danger-text)]/25 bg-[var(--danger-bg)] px-3 py-2 text-[11px] text-[var(--danger-text)]">
                     {ghExportResult.error}
                   </div>
                 )}
@@ -601,10 +609,10 @@ function StatusPill({ status }: { status: string | null }) {
   if (!status) return null;
 
   const styles: Record<string, string> = {
-    pending: "bg-[#30363d] text-[#8b949e]",
-    running: "bg-[#1f3d2b] text-[#3fb950]",
-    completed: "bg-[#1a3a2a] text-[#56d364]",
-    failed: "bg-[#3d1f1f] text-[#f85149]",
+    pending: "bg-[var(--surface2)] text-[var(--muted)]",
+    running: "bg-[var(--info-bg)] text-[var(--info-text)]",
+    completed: "bg-[var(--success-bg)] text-[var(--success-text)]",
+    failed: "bg-[var(--danger-bg)] text-[var(--danger-text)]",
   };
 
   return (

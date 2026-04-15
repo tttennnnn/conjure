@@ -13,7 +13,7 @@ export default function HomePage() {
       </p>
       <Link
         href="/session/new"
-        className="mt-1 rounded-[7px] bg-[var(--text)] px-5 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+        className="mt-1 rounded-[var(--radius)] bg-[var(--text)] px-5 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90"
       >
         + New session
       </Link>

@@ -123,14 +123,14 @@ export default function CodePanel({ iacCode, isStale, iacTool }: CodePanelProps)
 
       {/* Stale banner */}
       {isStale && (
-        <div className="shrink-0 border-b border-[var(--warning-border,#f59e0b)] bg-[var(--warning-bg,#fef3c7)] px-4 py-2 text-[11px] text-[var(--warning-text,#92400e)]">
+        <div className="shrink-0 border-b border-[var(--warning-border)] bg-[var(--warning-bg)] px-4 py-2 text-[11px] text-[var(--warning-text)]">
           Diagram or config has changed — regenerate to update code.
         </div>
       )}
 
       {/* Code display */}
       <div className="flex flex-1 overflow-auto">
-        <pre className="flex-1 p-4 text-[11px] leading-relaxed font-[JetBrains_Mono,monospace] whitespace-pre">
+        <pre className="flex-1 p-4 text-[11px] leading-relaxed font-[family-name:var(--font-mono)] whitespace-pre">
           {highlightedNodes ?? <span className="text-[var(--muted)]"># (empty)</span>}
         </pre>
       </div>

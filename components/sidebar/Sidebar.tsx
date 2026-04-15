@@ -61,10 +61,10 @@ function SessionRow({
         )}
       </div>
       <div className="flex items-center gap-1">
-        <span className={`rounded-[3px] px-1.5 py-px text-[9px] font-medium capitalize ${STATUS_PILL[s.status] ?? STATUS_PILL.active}`}>
+        <span className={`rounded-sm px-1.5 py-px text-[10px] font-medium capitalize ${STATUS_PILL[s.status] ?? STATUS_PILL.active}`}>
           {s.status === "deploy_failed" ? "failed" : s.status}
         </span>
-        <span className="text-[9px] text-[var(--hint)]">{relativeTime(s.createdAt)}</span>
+        <span className="text-[10px] text-[var(--hint)]">{relativeTime(s.createdAt)}</span>
       </div>
     </Link>
   );

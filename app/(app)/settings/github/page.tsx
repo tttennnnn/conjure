@@ -59,7 +59,7 @@ export default function GitHubPage() {
                 <button
                   onClick={handleDisconnect}
                   disabled={disconnecting}
-                  className="cursor-pointer rounded-[7px] border border-[var(--border2)] bg-[var(--surface)] px-3 py-1.5 text-xs text-[var(--text)] transition-colors hover:border-[var(--text)] disabled:opacity-60"
+                  className="cursor-pointer rounded-[var(--radius)] border border-[var(--border2)] bg-[var(--surface)] px-3 py-1.5 text-xs text-[var(--text)] transition-colors hover:border-[var(--text)] disabled:opacity-60"
                 >
                   {disconnecting ? "Disconnecting..." : "Disconnect"}
                 </button>
@@ -67,7 +67,7 @@ export default function GitHubPage() {
                 <button
                   onClick={handleConnect}
                   disabled={connecting}
-                  className="cursor-pointer rounded-[7px] border-none bg-[var(--text)] px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                  className="cursor-pointer rounded-[var(--radius)] border-none bg-[var(--text)] px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
                 >
                   {connecting ? "Connecting..." : "Connect GitHub"}
                 </button>
@@ -84,7 +84,7 @@ export default function GitHubPage() {
       )}
 
       {error && (
-        <div className="rounded-[5px] bg-[var(--danger-bg)] px-3 py-2 text-[11px] text-[var(--danger-text)]">
+        <div className="rounded-[var(--radius)] bg-[var(--danger-bg)] px-3 py-2 text-[11px] text-[var(--danger-text)]">
           {error}
         </div>
       )}

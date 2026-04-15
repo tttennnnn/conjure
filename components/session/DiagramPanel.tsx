@@ -149,7 +149,7 @@ export default function DiagramPanel({
         <div className="flex items-center gap-1 pb-1">
           <button
             onClick={() => { if (editMode) { handleEditSave(); } else { setEditValue(mermaidCode); setEditMode(true); } }}
-            className={["rounded px-2 py-0.5 text-[10px] transition-colors", editMode ? "bg-[var(--accent,#6366f1)] text-white" : "text-[var(--muted)] hover:bg-[var(--surface2)] hover:text-[var(--text)]"].join(" ")}
+            className={["rounded px-2 py-0.5 text-[10px] transition-colors", editMode ? "bg-[var(--accent)] text-white" : "text-[var(--muted)] hover:bg-[var(--surface2)] hover:text-[var(--text)]"].join(" ")}
           >
             {editMode ? "Save" : "Edit"}
           </button>
@@ -163,7 +163,7 @@ export default function DiagramPanel({
           <button
             onClick={onGenerateCode}
             disabled={isGenerating || !mermaidCode}
-            className="flex items-center gap-1 rounded bg-[var(--accent,#6366f1)] px-2.5 py-0.5 text-[10px] font-medium text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:pointer-events-none"
+            className="flex items-center gap-1 rounded bg-[var(--accent)] px-2.5 py-0.5 text-[10px] font-medium text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:pointer-events-none"
           >
             {isGenerating && <span className="inline-block h-2 w-2 animate-spin rounded-full border border-white border-t-transparent" />}
             {generateLabel}
@@ -192,7 +192,7 @@ export default function DiagramPanel({
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             onKeyDown={handleEditKeyDown}
-            className="h-full w-full resize-none rounded border border-[var(--border)] bg-[var(--surface)] p-3 font-[JetBrains_Mono,monospace] text-[11px] leading-relaxed text-[var(--text)] focus:outline-none focus:ring-1 focus:ring-[var(--accent,#6366f1)]"
+            className="h-full w-full resize-none rounded border border-[var(--border)] bg-[var(--surface)] p-3 font-[family-name:var(--font-mono)] text-[11px] leading-relaxed text-[var(--text)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
             spellCheck={false}
           />
         ) : (<>

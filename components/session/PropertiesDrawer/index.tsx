@@ -126,13 +126,13 @@ export default function PropertiesDrawer({
               setError(null);
             }}
             onKeyDown={handleKeyDown}
-            className="min-h-[180px] flex-1 resize-none rounded border border-[var(--border)] bg-[var(--bg)] p-2 font-[JetBrains_Mono,monospace] text-[11px] leading-relaxed text-[var(--text)] focus:outline-none focus:ring-1 focus:ring-[var(--accent,#6366f1)]"
+            className="min-h-[180px] flex-1 resize-none rounded border border-[var(--border)] bg-[var(--bg)] p-2 font-[family-name:var(--font-mono)] text-[11px] leading-relaxed text-[var(--text)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
             spellCheck={false}
           />
         )}
 
         {error && (
-          <div className="rounded border border-[var(--danger-bg,#fee2e2)] bg-[var(--danger-bg,#fee2e2)] px-2.5 py-2 text-[10px] text-[var(--danger-text,#991b1b)]">
+          <div className="rounded border border-[var(--danger-text)]/25 bg-[var(--danger-bg)] px-2.5 py-2 text-[10px] text-[var(--danger-text)]">
             {error}
           </div>
         )}
@@ -154,7 +154,7 @@ export default function PropertiesDrawer({
             <button
               onClick={() => void handleSave()}
               disabled={isSaving}
-              className="rounded bg-[var(--accent,#6366f1)] px-2.5 py-1 text-[10px] font-medium text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:pointer-events-none"
+              className="rounded bg-[var(--accent)] px-2.5 py-1 text-[10px] font-medium text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:pointer-events-none"
             >
               {isSaving ? "Saving…" : "Save"}
             </button>

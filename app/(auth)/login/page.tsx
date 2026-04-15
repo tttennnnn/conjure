@@ -153,7 +153,7 @@ function LoginForm() {
       <button
         type="submit"
         disabled={loading}
-        className="mt-3 w-full rounded-[7px] bg-[var(--text)] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
+        className="mt-3 w-full rounded-[var(--radius)] bg-[var(--text)] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
       >
         {loading ? "Signing in..." : "Sign in"}
       </button>
