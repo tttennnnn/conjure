@@ -39,3 +39,41 @@ body {
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading), sans-serif;
 }
+
+/* Mermaid node category styles — applied via :::className syntax */
+/* Targets the rect/polygon inside each node group rendered by Mermaid */
+
+.cls_compute > rect, .cls_compute > polygon, .cls_compute > circle, .cls_compute > ellipse {
+  fill: #dbeafe !important;
+  stroke: #3b82f6 !important;
+}
+
+.cls_database > rect, .cls_database > polygon, .cls_database > circle, .cls_database > ellipse {
+  fill: #dcfce7 !important;
+  stroke: #22c55e !important;
+}
+
+.cls_cache > rect, .cls_cache > polygon, .cls_cache > circle, .cls_cache > ellipse {
+  fill: #ffedd5 !important;
+  stroke: #f97316 !important;
+}
+
+.cls_network > rect, .cls_network > polygon, .cls_network > circle, .cls_network > ellipse {
+  fill: #ede9fe !important;
+  stroke: #8b5cf6 !important;
+}
+
+.cls_storage > rect, .cls_storage > polygon, .cls_storage > circle, .cls_storage > ellipse {
+  fill: #ccfbf1 !important;
+  stroke: #14b8a6 !important;
+}
+
+.cls_cdn > rect, .cls_cdn > polygon, .cls_cdn > circle, .cls_cdn > ellipse {
+  fill: #fce7f3 !important;
+  stroke: #ec4899 !important;
+}
+
+.cls_queue > rect, .cls_queue > polygon, .cls_queue > circle, .cls_queue > ellipse {
+  fill: #fef9c3 !important;
+  stroke: #eab308 !important;
+}

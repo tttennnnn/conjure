@@ -60,6 +60,7 @@ export function extractMermaidNodeIds(code: string): string[] {
   const ids = new Set<string>();
 
   // Match node definitions: nodeId[Label], nodeId(Label), nodeId{Label}, nodeId((Label))
+  // Also handles :::className suffix (e.g. nodeId[Label]:::cls_database) — ID captured before [
   const defPattern = /^\s*(\w+)\s*[\[({]/gm;
   let match: RegExpExecArray | null;
   while ((match = defPattern.exec(code)) !== null) {
