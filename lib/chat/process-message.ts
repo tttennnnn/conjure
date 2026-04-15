@@ -134,7 +134,16 @@ export async function processMessage(params: ProcessMessageParams): Promise<Chat
       if (result.mermaid) updateData.mermaidCode = result.mermaid;
       if (result.configYaml) updateData.configYaml = result.configYaml;
       if (session.iacCode) updateData.iacStale = true;
-      await tx.session.update({ where: { id: session.id }, data: updateData });
+      // Guard against concurrent requests that already wrote newer diagram state.
+      // updatedAt was captured before the LLM call; if it changed, another request
+      // won the race and we must not silently overwrite its changes.
+      const updated = await tx.session.updateMany({
+        where: { id: session.id, updatedAt: session.updatedAt },
+        data: updateData,
+      });
+      if (updated.count === 0) {
+        throw new Error("SESSION_CONCURRENT_MODIFICATION");
+      }
     }
 
     return { userMessage, assistantMessage };

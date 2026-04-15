@@ -59,14 +59,25 @@ export const POST = createHandler<{ sessionId?: string; message?: string }>(
       return NextResponse.json({ error: keyResult.error }, { status: keyResult.status });
     }
 
-    const result = await processMessage({
-      session,
-      message: message.trim(),
-      provider: resolved.provider,
-      modelId: resolved.modelId,
-      apiKey: keyResult.apiKey,
-      disableReasoning: resolved.disableReasoning,
-    });
+    let result;
+    try {
+      result = await processMessage({
+        session,
+        message: message.trim(),
+        provider: resolved.provider,
+        modelId: resolved.modelId,
+        apiKey: keyResult.apiKey,
+        disableReasoning: resolved.disableReasoning,
+      });
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message === "SESSION_CONCURRENT_MODIFICATION") {
+        return NextResponse.json(
+          { error: "Session was updated by another request. Please retry." },
+          { status: 409 },
+        );
+      }
+      throw err;
+    }
 
     return NextResponse.json(result);
   },
