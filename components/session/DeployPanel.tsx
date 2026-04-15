@@ -19,6 +19,7 @@ interface DeployPanelProps {
   stateBackend: Record<string, unknown> | null;
   deployJobId: string | null;
   applyJobId: string | null;
+  githubRepo: string | null;
 }
 
 export default function DeployPanel({
@@ -33,6 +34,7 @@ export default function DeployPanel({
   stateBackend: initialStateBackend,
   deployJobId,
   applyJobId,
+  githubRepo,
 }: DeployPanelProps) {
   const [profiles, setProfiles] = useState<CredentialProfileSummary[]>([]);
   const [profilesLoading, setProfilesLoading] = useState(true);
@@ -51,6 +53,14 @@ export default function DeployPanel({
   // State backend fields — GCP
   const [gcsBucket, setGcsBucket] = useState((initialStateBackend?.bucket as string) ?? "");
   const [gcsPrefix, setGcsPrefix] = useState((initialStateBackend?.prefix as string) ?? "");
+
+  // GitHub export state
+  const [ghExportOpen, setGhExportOpen] = useState(false);
+  const [ghBranch, setGhBranch] = useState("conjure/terraform");
+  const [ghCreatePr, setGhCreatePr] = useState(true);
+  const [ghBaseBranch, setGhBaseBranch] = useState("main");
+  const [ghExportStatus, setGhExportStatus] = useState<"idle" | "pushing" | "success" | "error">("idle");
+  const [ghExportResult, setGhExportResult] = useState<{ sha?: string; prUrl?: string; error?: string } | null>(null);
 
   const planOutputRef = useRef<HTMLPreElement>(null);
   const applyOutputRef = useRef<HTMLPreElement>(null);
@@ -168,6 +178,36 @@ export default function DeployPanel({
       ],
       "terraform.zip",
     );
+  }
+
+  async function handleGitHubExport() {
+    if (!githubRepo || ghExportStatus === "pushing") return;
+    setGhExportStatus("pushing");
+    setGhExportResult(null);
+    try {
+      const res = await fetch("/api/github/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId,
+          repo: githubRepo,
+          branch: ghBranch.trim(),
+          createPr: ghCreatePr,
+          ...(ghCreatePr && { baseBranch: ghBaseBranch.trim() }),
+        }),
+      });
+      const data = await res.json() as { sha?: string; prUrl?: string; prError?: string; error?: string };
+      if (!res.ok && res.status !== 207) {
+        setGhExportStatus("error");
+        setGhExportResult({ error: data.error ?? "Export failed" });
+      } else {
+        setGhExportStatus("success");
+        setGhExportResult({ sha: data.sha, prUrl: data.prUrl, error: data.prError });
+      }
+    } catch {
+      setGhExportStatus("error");
+      setGhExportResult({ error: "Network error — could not reach server" });
+    }
   }
 
   const inputClass =
@@ -445,12 +485,112 @@ export default function DeployPanel({
           <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-[var(--muted)]">
             Export
           </h3>
-          <button
-            onClick={handleDownloadZip}
-            className="rounded px-3 py-1 text-[11px] text-[var(--muted)] border border-[var(--border)] hover:bg-[var(--surface2)] hover:text-[var(--text)] transition-colors"
-          >
-            Download .zip
-          </button>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={handleDownloadZip}
+              className="self-start rounded px-3 py-1 text-[11px] text-[var(--muted)] border border-[var(--border)] hover:bg-[var(--surface2)] hover:text-[var(--text)] transition-colors"
+            >
+              Download .zip
+            </button>
+
+            {githubRepo && (
+              <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] p-3 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-[var(--text)]">
+                    Push to <span className="font-mono font-medium">{githubRepo}</span>
+                  </span>
+                  <button
+                    onClick={() => {
+                      setGhExportOpen((v) => !v);
+                      setGhExportStatus("idle");
+                      setGhExportResult(null);
+                    }}
+                    className="text-[10px] text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+                  >
+                    {ghExportOpen ? "Cancel" : "Configure"}
+                  </button>
+                </div>
+
+                {ghExportOpen && (
+                  <>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[11px] text-[var(--muted)]">Branch</label>
+                      <input
+                        type="text"
+                        value={ghBranch}
+                        onChange={(e) => setGhBranch(e.target.value)}
+                        placeholder="conjure/terraform"
+                        className={inputClass}
+                      />
+                    </div>
+
+                    <label className="flex items-center gap-1.5 text-[11px] text-[var(--muted)] cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={ghCreatePr}
+                        onChange={(e) => setGhCreatePr(e.target.checked)}
+                        className="accent-[var(--accent)]"
+                      />
+                      Open pull request
+                    </label>
+
+                    {ghCreatePr && (
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[11px] text-[var(--muted)]">Base branch</label>
+                        <input
+                          type="text"
+                          value={ghBaseBranch}
+                          onChange={(e) => setGhBaseBranch(e.target.value)}
+                          placeholder="main"
+                          className={inputClass}
+                        />
+                      </div>
+                    )}
+
+                    <button
+                      onClick={handleGitHubExport}
+                      disabled={ghExportStatus === "pushing" || isStale || !ghBranch.trim()}
+                      className={[
+                        "rounded px-3 py-1 text-[11px] font-medium transition-colors self-start",
+                        ghExportStatus === "pushing" || isStale || !ghBranch.trim()
+                          ? "bg-[var(--surface2)] text-[var(--muted)] cursor-not-allowed"
+                          : "bg-[var(--accent,#6366f1)] text-white hover:opacity-90",
+                      ].join(" ")}
+                    >
+                      {ghExportStatus === "pushing" ? "Pushing…" : "Push to GitHub"}
+                    </button>
+                  </>
+                )}
+
+                {/* Result feedback */}
+                {ghExportStatus === "success" && ghExportResult && (
+                  <div className="rounded border border-[var(--success-bg,#dcfce7)] bg-[var(--success-bg,#dcfce7)] px-3 py-2 text-[11px] text-[var(--success-text,#16a34a)] flex flex-col gap-1">
+                    <span>Pushed successfully ({ghExportResult.sha?.slice(0, 7)})</span>
+                    {ghExportResult.prUrl && (
+                      <a
+                        href={ghExportResult.prUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline"
+                      >
+                        View pull request →
+                      </a>
+                    )}
+                    {ghExportResult.error && (
+                      <span className="text-[var(--warn-text,#92400e)]">
+                        Push succeeded but PR creation failed: {ghExportResult.error}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {ghExportStatus === "error" && ghExportResult?.error && (
+                  <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-[11px] text-red-700">
+                    {ghExportResult.error}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </section>
       </div>
     </div>

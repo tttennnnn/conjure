@@ -48,6 +48,14 @@ type GitHubApiContentEntry = {
   type: string;
 };
 
+type GitHubApiFileContent = {
+  type: string;
+  encoding: string;
+  content: string;
+  name: string;
+  path: string;
+};
+
 type GitHubApiRepoResponse = {
   id: number;
   full_name: string;
@@ -327,6 +335,79 @@ export async function createPullRequest(params: {
   }
 }
 
+/**
+ * List all .tf file paths in a repo branch.
+ * Uses the git tree API (recursive) for efficiency; falls back to root contents on truncation.
+ */
+export async function listTfFiles(repo: string, branch: string): Promise<string[]> {
+  const token = await getGitHubToken();
+  if (!token) {
+    throw new GitHubNotConnectedError();
+  }
+
+  const parsed = parseRepo(repo);
+  if (!parsed) {
+    throw new Error("Invalid repository. Expected format: owner/repo");
+  }
+
+  const basePath = `/repos/${parsed.owner}/${parsed.name}`;
+
+  try {
+    const tree = await githubFetch<GitHubApiTreeResponse>(
+      `${basePath}/git/trees/${encodeURIComponent(branch)}?recursive=1`,
+      token,
+    );
+
+    if (!tree.truncated) {
+      return tree.tree
+        .filter((entry) => entry.type === "blob" && entry.path.endsWith(".tf"))
+        .map((entry) => entry.path);
+    }
+
+    // Tree truncated — fall back to checking root directory only
+    const entries = await githubFetch<GitHubApiContentEntry[]>(
+      `${basePath}/contents?ref=${encodeURIComponent(branch)}`,
+      token,
+    );
+    return Array.isArray(entries)
+      ? entries.filter((e) => e.type === "file" && e.name.endsWith(".tf")).map((e) => e.name)
+      : [];
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to list .tf files";
+    throw new Error(message);
+  }
+}
+
+/**
+ * Read the UTF-8 content of a single file from a repo branch.
+ * Uses the GitHub contents API (base64 encoded response).
+ */
+export async function getFileContent(repo: string, branch: string, filePath: string): Promise<string> {
+  const token = await getGitHubToken();
+  if (!token) {
+    throw new GitHubNotConnectedError();
+  }
+
+  const parsed = parseRepo(repo);
+  if (!parsed) {
+    throw new Error("Invalid repository. Expected format: owner/repo");
+  }
+
+  const encoded = filePath.split("/").map(encodeURIComponent).join("/");
+  const result = await githubFetch<GitHubApiFileContent>(
+    `/repos/${parsed.owner}/${parsed.name}/contents/${encoded}?ref=${encodeURIComponent(branch)}`,
+    token,
+  );
+
+  if (result.type !== "file" || result.encoding !== "base64") {
+    throw new Error(`Unexpected content type for ${filePath}`);
+  }
+
+  // GitHub wraps base64 content in newlines — strip them before decoding
+  const clean = result.content.replace(/\n/g, "");
+  return Buffer.from(clean, "base64").toString("utf8");
+}
+
 /** Push files to a branch on a GitHub repository. */
 export async function pushFiles(params: {
   repo: string; // "owner/repo"
@@ -351,13 +432,32 @@ export async function pushFiles(params: {
   const basePath = `/repos/${parsed.owner}/${parsed.name}`;
 
   try {
-    const ref = await githubFetch<{ object: { sha: string } }>(
-      `${basePath}/git/ref/heads/${encodeURIComponent(params.branch)}`,
-      token,
-    );
+    // Resolve the head SHA for the target branch — create the branch if it doesn't exist yet.
+    let headSha: string;
+    try {
+      const ref = await githubFetch<{ object: { sha: string } }>(
+        `${basePath}/git/ref/heads/${encodeURIComponent(params.branch)}`,
+        token,
+      );
+      headSha = ref.object.sha;
+    } catch (refError) {
+      // Branch not found — create it from the repo's default branch.
+      if (!(refError instanceof Error && refError.message.includes("404"))) throw refError;
+      const repoInfo = await githubFetch<{ default_branch: string }>(basePath, token);
+      const baseRef = await githubFetch<{ object: { sha: string } }>(
+        `${basePath}/git/ref/heads/${encodeURIComponent(repoInfo.default_branch)}`,
+        token,
+      );
+      headSha = baseRef.object.sha;
+      await githubFetch(`${basePath}/git/refs`, token, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ref: `refs/heads/${params.branch}`, sha: headSha }),
+      });
+    }
 
     const headCommit = await githubFetch<{ tree: { sha: string } }>(
-      `${basePath}/git/commits/${ref.object.sha}`,
+      `${basePath}/git/commits/${headSha}`,
       token,
     );
 
@@ -381,7 +481,7 @@ export async function pushFiles(params: {
       body: JSON.stringify({
         message: params.message,
         tree: tree.sha,
-        parents: [ref.object.sha],
+        parents: [headSha],
       }),
     });
 
