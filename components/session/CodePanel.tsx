@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import Prism from "prismjs";
+import "prismjs/components/prism-hcl";
 import { downloadAsZip } from "@/lib/utils/zip";
 
 export interface IacFiles {
@@ -23,17 +25,44 @@ const FILE_TABS: { key: FileKey; label: string }[] = [
   { key: "outputsTf", label: "outputs.tf" },
 ];
 
+type PrismToken = string | Prism.Token;
+
+function renderTokens(tokens: PrismToken[]): React.ReactNode[] {
+  return tokens.map((token, i) => {
+    if (typeof token === "string") return token;
+    const type = Array.isArray(token.type) ? token.type.join(" ") : token.type;
+    const children = Array.isArray(token.content)
+      ? renderTokens(token.content as PrismToken[])
+      : typeof token.content === "string"
+        ? token.content
+        : renderTokens([token.content as PrismToken]);
+    return <span key={i} className={`token ${type}`}>{children}</span>;
+  });
+}
+
 export default function CodePanel({ iacCode, isStale, iacTool }: CodePanelProps) {
   const [activeFile, setActiveFile] = useState<FileKey>("mainTf");
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
 
   const activeContent = iacCode[activeFile];
 
+  const highlightedNodes = useMemo(() => {
+    if (!activeContent) return null;
+    const tokens = Prism.tokenize(activeContent, Prism.languages["hcl"]!);
+    return renderTokens(tokens);
+  }, [activeContent]);
+
   function handleCopy() {
-    navigator.clipboard.writeText(activeContent).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    });
+    navigator.clipboard.writeText(activeContent)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      })
+      .catch(() => {
+        setCopyFailed(true);
+        setTimeout(() => setCopyFailed(false), 1500);
+      });
   }
 
   function handleDownloadZip() {
@@ -75,9 +104,13 @@ export default function CodePanel({ iacCode, isStale, iacTool }: CodePanelProps)
           </span>
           <button
             onClick={handleCopy}
-            className="rounded px-2 py-0.5 text-[10px] text-[var(--muted)] hover:bg-[var(--surface2)] hover:text-[var(--text)] transition-colors"
+            className={`rounded px-2 py-0.5 text-[10px] transition-colors ${
+              copyFailed
+                ? "text-[var(--danger-text)]"
+                : "text-[var(--muted)] hover:bg-[var(--surface2)] hover:text-[var(--text)]"
+            }`}
           >
-            {copied ? "Copied" : "Copy"}
+            {copied ? "Copied" : copyFailed ? "Copy failed" : "Copy"}
           </button>
           <button
             onClick={handleDownloadZip}
@@ -97,8 +130,8 @@ export default function CodePanel({ iacCode, isStale, iacTool }: CodePanelProps)
 
       {/* Code display */}
       <div className="flex flex-1 overflow-auto">
-        <pre className="flex-1 p-4 text-[11px] leading-relaxed text-[var(--text)] font-[JetBrains_Mono,monospace] whitespace-pre">
-          {activeContent || <span className="text-[var(--muted)]"># (empty)</span>}
+        <pre className="flex-1 p-4 text-[11px] leading-relaxed font-[JetBrains_Mono,monospace] whitespace-pre">
+          {highlightedNodes ?? <span className="text-[var(--muted)]"># (empty)</span>}
         </pre>
       </div>
     </div>
