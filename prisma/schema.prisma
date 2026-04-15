@@ -31,9 +31,10 @@ model Session {
   applyJobId     String?   @map("apply_job_id")
   lastApplyStatus String?  @map("last_apply_status")
   lastApplyOutput String?  @map("last_apply_output") @db.Text
-  stateBackend   Json?     @map("state_backend")
-  planRegion     String?   @map("plan_region")
-  messages       Message[]
+  stateBackend            Json?     @map("state_backend")
+  planRegion              String?   @map("plan_region")
+  planCredentialProfileId String?   @map("plan_credential_profile_id")
+  messages                Message[]
 
   @@map("sessions")
 }
