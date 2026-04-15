@@ -15,6 +15,9 @@
   --info-text: #185FA5;
   --warn-bg: #FFF3DB;
   --warn-text: #7A4F00;
+  --warning-bg: #FFF3DB;
+  --warning-border: #F59E0B;
+  --warning-text: #7A4F00;
   --danger-bg: #FCEBEB;
   --danger-text: #A32D2D;
   --purple-bg: #EEEDFE;
@@ -77,3 +80,11 @@ h1, h2, h3, h4, h5, h6 {
   fill: #fef9c3 !important;
   stroke: #eab308 !important;
 }
+
+/* Prism.js HCL syntax highlighting */
+.token.keyword    { color: var(--purple-text); font-weight: 500; }
+.token.string     { color: var(--success-text); }
+.token.comment    { color: var(--hint); font-style: italic; }
+.token.number     { color: var(--warn-text); }
+.token.punctuation,
+.token.operator   { color: var(--muted); }
