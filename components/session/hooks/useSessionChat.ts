@@ -29,11 +29,19 @@ export function useSessionChat(
         });
 
         if (!res.ok) {
-          const data = await res.json();
+          let errorContent: string;
+          if (res.status === 429) {
+            errorContent = "Rate limit reached — wait a moment and try again.";
+          } else if (res.status >= 500) {
+            errorContent = "Server error — please try again in a moment.";
+          } else {
+            const data = await res.json().catch(() => ({}));
+            errorContent = (data as { error?: string }).error || "Something went wrong. Please try again.";
+          }
           const errorMsg: ChatMessage = {
             id: `error-${Date.now()}`,
             role: "assistant",
-            content: data.error || "Something went wrong. Please try again.",
+            content: errorContent,
             createdAt: new Date().toISOString(),
           };
           setMessages((prev) => [...prev, errorMsg]);
@@ -60,7 +68,7 @@ export function useSessionChat(
         const errorMsg: ChatMessage = {
           id: `error-${Date.now()}`,
           role: "assistant",
-          content: "Failed to send message. Please try again.",
+          content: "Network error — check your connection and try again.",
           createdAt: new Date().toISOString(),
         };
         setMessages((prev) => [...prev, errorMsg]);

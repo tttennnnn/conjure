@@ -8,6 +8,7 @@ interface DiagramPanelProps {
   isStale: boolean;
   hasCode: boolean;
   isGenerating: boolean;
+  codeError?: string | null;
   /** When true, suppresses the "Diagram" tab label (outer context already provides the tab bar). */
   hasOuterTabs?: boolean;
   onGenerateCode: () => void;
@@ -20,6 +21,7 @@ export default function DiagramPanel({
   isStale,
   hasCode,
   isGenerating,
+  codeError,
   hasOuterTabs = false,
   onGenerateCode,
   onEditSave,
@@ -166,6 +168,9 @@ export default function DiagramPanel({
             {isGenerating && <span className="inline-block h-2 w-2 animate-spin rounded-full border border-white border-t-transparent" />}
             {generateLabel}
           </button>
+          {codeError && (
+            <span className="text-[10px] text-[var(--danger-text)]">{codeError}</span>
+          )}
         </div>
       </div>
 
@@ -204,7 +209,7 @@ export default function DiagramPanel({
         )}
 
         {error && (
-          <div className="max-w-[400px] rounded-lg border border-[var(--danger-bg)] bg-[var(--danger-bg)] p-4">
+          <div className="max-w-[400px] rounded-lg border border-[var(--danger-text)]/30 bg-[var(--danger-bg)] p-4">
             <div className="text-[11px] font-semibold text-[var(--danger-text)]">
               Diagram render error
             </div>

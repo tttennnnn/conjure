@@ -196,6 +196,7 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
                 hasCode={!!codegen.iacCode}
                 hasOuterTabs={!!codegen.iacCode}
                 isGenerating={codegen.isGenerating}
+                codeError={codegen.codeError}
                 onGenerateCode={codegen.generateCode}
                 onEditSave={handleEditSave}
                 onNodeClick={setSelectedNodeId}
