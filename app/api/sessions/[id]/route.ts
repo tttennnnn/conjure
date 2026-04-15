@@ -106,6 +106,8 @@ export const PATCH = createHandler<{ configYaml?: unknown; name?: unknown; merma
   },
 );
 
+const ACTIVE_JOB_STATUSES = new Set(["pending", "running"]);
+
 export const DELETE = createDeleteHandler(
   {},
   async ({ userId, params }) => {
@@ -113,6 +115,16 @@ export const DELETE = createDeleteHandler(
     const session = await getPrisma().session.findUnique({ where: { id } });
     if (!session || session.userId !== userId) {
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
+    }
+
+    if (
+      ACTIVE_JOB_STATUSES.has(session.lastPlanStatus ?? "") ||
+      ACTIVE_JOB_STATUSES.has(session.lastApplyStatus ?? "")
+    ) {
+      return NextResponse.json(
+        { error: "Cannot delete a session with an active deploy job. Wait for it to complete first." },
+        { status: 409 },
+      );
     }
 
     await getPrisma().session.delete({ where: { id } });

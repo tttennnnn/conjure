@@ -155,7 +155,14 @@ export default function Sidebar({ displayName, avatarUrl }: SidebarProps) {
     }
     try {
       const res = await fetch(`/api/sessions/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const msg = (body as { error?: string }).error ?? "Failed to delete session";
+        alert(msg);
+        pendingDeleteIds.current.delete(id);
+        fetchSessions();
+        return;
+      }
       pendingDeleteIds.current.delete(id);
     } catch {
       pendingDeleteIds.current.delete(id);
