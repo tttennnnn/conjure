@@ -84,7 +84,7 @@ graph TD
         end
     end
 
-    subgraph DS["Deploy Service (Railway)"]
+    subgraph DS["Deploy Service (Render)"]
         DSApp["Node.js server\n(terraform plan/apply)"]
     end
 
@@ -129,7 +129,7 @@ graph TD
 
 **How it works:** Each user message triggers up to three LLM calls. **Call 0** (guardrail) classifies the input as infrastructure-related or off-topic: rejected messages never reach the main model, blocking prompt injection and misuse. **Call 1** takes the approved prompt plus the current Mermaid + Config YAML and generates updates with a chat explanation. **Call 2** is triggered separately by the "Generate Code" button, converting the full Mermaid + Config pair into Terraform HCL. All session data is persisted in Supabase Postgres with Row Level Security. Users start with free models via the app-provided OpenRouter key, and can bring their own Anthropic API key for premium Claude models.
 
-**Deploy service:** Plan and Apply are handled by a separate Node.js service (Railway) that runs `terraform` in an isolated subprocess. The Vercel API routes proxy the request, poll for results, and persist job status to the DB. Each Terraform process gets a minimal environment allowlist — `process.env` is never spread — and `HOME` is set to an ephemeral job directory so the container's own credential files can't be found at well-known paths. Credentials are passed only for the duration of the job and deleted with the temp directory on cleanup.
+**Deploy service:** Plan and Apply are handled by a separate Node.js service (Render) that runs `terraform` in an isolated subprocess. The Vercel API routes proxy the request, poll for results, and persist job status to the DB. Each Terraform process gets a minimal environment allowlist — `process.env` is never spread — and `HOME` is set to an ephemeral job directory so the container's own credential files can't be found at well-known paths. Credentials are passed only for the duration of the job and deleted with the temp directory on cleanup.
 
 **Plan–apply binding:** `terraform apply` always reads the region and state backend from the DB row written at plan time — not from the apply request. This ensures apply always runs against exactly what was reviewed, even if the user changes inputs in the UI between plan and apply.
 

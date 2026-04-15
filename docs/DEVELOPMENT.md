@@ -34,7 +34,7 @@ Fill in `.env.local`:
 | `SUPABASE_SERVICE_ROLE_KEY` | Same page → `service_role` key (keep secret) |
 | `OPENROUTER_API_KEY` | [openrouter.ai/keys](https://openrouter.ai/keys) → create a key |
 | `DATABASE_URL` | Supabase dashboard → Settings → Database → Connection string (URI) |
-| `DEPLOY_SERVICE_URL` | URL of the deployed deploy service (e.g. Railway app URL) |
+| `DEPLOY_SERVICE_URL` | URL of the deployed deploy service (e.g. Render app URL) |
 | `DEPLOY_SERVICE_API_KEY` | Shared secret between Vercel and the deploy service — set the same value in both |
 
 ### 3. Start the dev server
@@ -386,7 +386,8 @@ conjure/
 ├── deploy-service/                    # Standalone Node.js service — runs terraform
 │   ├── server.js                      # Express app: /jobs/plan, /jobs/apply, /jobs/:id
 │   ├── package.json
-│   └── Dockerfile                     # Deploys to Railway (or any container host)
+│   ├── package-lock.json
+│   └── Dockerfile                     # Deploys to Render (or any container host)
 └── docs/
     ├── DEVELOPMENT.md                 # This file
     └── conjure-mockup-v3.html         # UI mockup (open in browser)
