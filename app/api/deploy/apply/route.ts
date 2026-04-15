@@ -65,6 +65,26 @@ export const POST = createHandler<ApplyRequestBody>(
       );
     }
 
+    // Enforce credential binding: apply must use the same identity as the reviewed plan.
+    // This prevents applying reviewed HCL to a different cloud account than the one that was planned.
+    if (session.planCredentialProfileId !== null) {
+      // Plan used a saved profile — apply must use the same profile
+      if (credentialProfileId !== session.planCredentialProfileId) {
+        return NextResponse.json(
+          { error: "Apply must use the same credential profile as the plan. Re-run the plan if you want to use different credentials." },
+          { status: 409 },
+        );
+      }
+    } else {
+      // Plan used one-off credentials — apply must also use one-off credentials
+      if (credentialProfileId !== undefined) {
+        return NextResponse.json(
+          { error: "Plan was run with one-off credentials. Apply must also use one-off credentials." },
+          { status: 409 },
+        );
+      }
+    }
+
     // Use the region and state backend from the successful plan, not from the request.
     // This ensures apply always runs against exactly what was reviewed.
     const region = session.planRegion;

@@ -161,6 +161,8 @@ export const POST = createHandler<PlanRequestBody>(
       data: {
         deployJobId: jobId,
         planRegion: region,
+        // Bind the credential identity to this plan so apply cannot switch to a different account
+        planCredentialProfileId: typeof credentialProfileId === "string" ? credentialProfileId : null,
         ...(stateBackend !== undefined && { stateBackend: stateBackend as object }),
       },
     });

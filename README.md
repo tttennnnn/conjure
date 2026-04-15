@@ -131,7 +131,7 @@ graph TD
 
 **Deploy service:** Plan and Apply are handled by a separate Node.js service (Render) that runs `terraform` in an isolated subprocess. The Vercel API routes proxy the request, poll for results, and persist job status to the DB. Each Terraform process gets a minimal environment allowlist — `process.env` is never spread — and `HOME` is set to an ephemeral job directory so the container's own credential files can't be found at well-known paths. Credentials are passed only for the duration of the job and deleted with the temp directory on cleanup.
 
-**Plan–apply binding:** `terraform apply` always reads the region and state backend from the DB row written at plan time — not from the apply request. This ensures apply always runs against exactly what was reviewed, even if the user changes inputs in the UI between plan and apply.
+**Plan–apply binding:** `terraform apply` always reads the region, state backend, and credential profile from the DB row written at plan time — not from the apply request. This ensures apply always runs against exactly what was reviewed (same cloud account, same region, same backend), even if the user changes inputs in the UI between plan and apply. Mismatched credentials are rejected with a 409.
 
 **Security boundaries:** Auth and Vault (amber) are the trust boundaries. Input Guardrails and Output Validation (red) are the LLM security layer. The browser only holds an HttpOnly session cookie; no secrets reach the client. Every API request is authenticated via JWT and scoped by Supabase RLS so users can only access their own data. Credentials and API keys are encrypted at rest in Vault and decrypted server-side only at the moment of use.
 
