@@ -43,18 +43,24 @@ export default function SessionTopbar({
     const trimmed = renameDraft.trim();
     if (!trimmed || trimmed === sessionName) return;
 
+    const previousName = sessionName;
+    setSessionName(trimmed);
+    window.dispatchEvent(
+      new CustomEvent("session-renamed", { detail: { id: sessionId, name: trimmed } }),
+    );
+
     try {
-      await fetch(`/api/sessions/${sessionId}`, {
+      const res = await fetch(`/api/sessions/${sessionId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: trimmed }),
       });
-      setSessionName(trimmed);
-      window.dispatchEvent(
-        new CustomEvent("session-renamed", { detail: { id: sessionId, name: trimmed } }),
-      );
+      if (!res.ok) throw new Error();
     } catch {
-      // name stays unchanged in both topbar and sidebar
+      setSessionName(previousName);
+      window.dispatchEvent(
+        new CustomEvent("session-renamed", { detail: { id: sessionId, name: previousName } }),
+      );
     }
   }, [renameDraft, sessionName, sessionId]);
 
@@ -102,10 +108,14 @@ export default function SessionTopbar({
         )}
       </div>
       <div className="flex gap-1.5">
-        <span className="rounded border border-[var(--border)] bg-[var(--surface2)] px-1.5 py-0.5 text-[10px] text-[var(--muted)]">
+        <span className={`rounded border px-1.5 py-0.5 text-[10px] font-medium ${
+          targetEnv.toLowerCase() === "aws"
+            ? "border-[var(--warning-border)] bg-[var(--warn-bg)] text-[var(--warn-text)]"
+            : "border-[var(--info-bg)] bg-[var(--info-bg)] text-[var(--info-text)]"
+        }`}>
           {targetEnv.toUpperCase()}
         </span>
-        <span className="rounded border border-[var(--border)] bg-[var(--surface2)] px-1.5 py-0.5 text-[10px] text-[var(--muted)]">
+        <span className="max-w-[120px] truncate rounded border border-[var(--border)] bg-[var(--surface2)] px-1.5 py-0.5 text-[10px] text-[var(--muted)]">
           {model}
         </span>
         <span className="rounded border border-[var(--border)] bg-[var(--surface2)] px-1.5 py-0.5 text-[10px] capitalize text-[var(--muted)]">
