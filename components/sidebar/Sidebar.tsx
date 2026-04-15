@@ -25,16 +25,11 @@ function SessionRow({
 }) {
   const [hovered, setHovered] = useState(false);
 
-  async function handleDelete(e: React.MouseEvent) {
+  function handleDelete(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
     if (!confirm("Delete this session? This cannot be undone.")) return;
-    try {
-      await fetch(`/api/sessions/${s.id}`, { method: "DELETE" });
-      onDelete(s.id);
-    } catch {
-      // Silently fail
-    }
+    onDelete(s.id);
   }
 
   return (
@@ -137,24 +132,33 @@ export default function Sidebar({ displayName, avatarUrl }: SidebarProps) {
   const [sessions, setSessions] = useState<SessionItem[]>([]);
   const menuRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const pendingDeleteIds = useRef<Set<string>>(new Set());
 
   const fetchSessions = useCallback(async () => {
     try {
       const res = await fetch("/api/sessions");
       if (res.ok) {
-        setSessions(await res.json());
+        const data: SessionItem[] = await res.json();
+        setSessions(data.filter((s) => !pendingDeleteIds.current.has(s.id)));
       }
     } catch {
       // Silently fail -- sidebar still works
     }
   }, []);
 
-  async function handleDelete(id: string) {
+  async function handleDeleteRequest(id: string) {
+    // Guard: suppress this ID from all refetches until DELETE settles
+    pendingDeleteIds.current.add(id);
+    setSessions((prev) => prev.filter((s) => s.id !== id));
     if (pathname === `/session/${id}`) {
-      // Update sidebar first so it reflects the deletion before navigation clears the main panel.
-      await fetchSessions();
       router.push("/home");
-    } else {
+    }
+    try {
+      const res = await fetch(`/api/sessions/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      pendingDeleteIds.current.delete(id);
+    } catch {
+      pendingDeleteIds.current.delete(id);
       fetchSessions();
     }
   }
@@ -283,7 +287,7 @@ export default function Sidebar({ displayName, avatarUrl }: SidebarProps) {
                       key={s.id}
                       s={s}
                       isActive={pathname === `/session/${s.id}`}
-                      onDelete={handleDelete}
+                      onDelete={handleDeleteRequest}
                     />
                   ))}
                 </div>
