@@ -60,7 +60,7 @@ export default function ChatPanel({ messages, isLoading }: ChatPanelProps) {
             }`}
           >
             <div
-              className={`max-w-[220px] px-2.5 py-[7px] text-[11px] leading-relaxed whitespace-pre-wrap ${
+              className={`max-w-[85%] px-2.5 py-[7px] text-[11px] leading-relaxed whitespace-pre-wrap ${
                 item.role === "user"
                   ? "rounded-[10px_10px_2px_10px] bg-[var(--text)] text-white"
                   : "rounded-[10px_10px_10px_2px] bg-[var(--surface2)] text-[var(--text)]"
