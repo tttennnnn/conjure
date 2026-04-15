@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import ConjureLogo from "@/components/ui/ConjureLogo";
 
-const GITHUB_URL = "https://github.com/yourusername/conjure";
+const GITHUB_URL = "https://github.com/tttennnnn/conjure";
 
 // ── Product mockup ─────────────────────────────────────────────────────────────
 
@@ -329,7 +329,7 @@ export default function LandingPage() {
                   : "bg-white text-[var(--text)] hover:bg-white/90"
               }`}
             >
-              Start free
+              Get started
             </Link>
           </nav>
         </header>
@@ -386,7 +386,7 @@ export default function LandingPage() {
                   href="/register"
                   className="flex items-center gap-1.5 rounded-[9px] bg-white px-5 py-2.5 text-[13.5px] font-semibold text-[var(--text)] shadow-lg transition-all hover:-translate-y-0.5 hover:bg-white/90 hover:shadow-xl"
                 >
-                  Start free
+                  Get started
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="5" y1="12" x2="19" y2="12" />
                     <polyline points="12 5 19 12 12 19" />
@@ -536,12 +536,6 @@ export default function LandingPage() {
                   ))}
                 </ul>
 
-                <Link
-                  href="/register"
-                  className="mt-6 flex w-full items-center justify-center rounded-[8px] border border-[var(--border2)] bg-[var(--surface)] py-2 text-[13px] font-medium text-[var(--text)] transition-colors hover:bg-[var(--surface2)]"
-                >
-                  Get started
-                </Link>
               </div>
 
               {/* BYOK tier */}
@@ -574,12 +568,6 @@ export default function LandingPage() {
                   ))}
                 </ul>
 
-                <Link
-                  href="/register"
-                  className="mt-6 flex w-full items-center justify-center rounded-[8px] bg-[var(--purple-text)] py-2 text-[13px] font-medium text-white transition-opacity hover:opacity-90"
-                >
-                  Get started
-                </Link>
               </div>
             </div>
           </div>
@@ -612,7 +600,7 @@ export default function LandingPage() {
                 href="/register"
                 className="flex items-center gap-1.5 rounded-[10px] bg-white px-6 py-3 text-[14px] font-semibold text-[var(--text)] shadow-lg transition-all hover:-translate-y-0.5 hover:bg-white/90 hover:shadow-xl"
               >
-                Start free
+                Get started
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="5" y1="12" x2="19" y2="12" />
                   <polyline points="12 5 19 12 12 19" />
