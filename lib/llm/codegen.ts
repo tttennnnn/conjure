@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { buildCodegenSystemPrompt, CODEGEN_TOOL } from "./prompts/codegen";
 import { extractDelimitedBlock } from "./parse";
+import { validateCodegenOutput } from "./codegen-parse";
 
 export interface IacFiles {
   mainTf: string;
@@ -18,6 +19,7 @@ interface CodegenParams {
   modelId: string;
   apiKey: string;
   disableReasoning: boolean;
+  correctiveNote?: string;
 }
 
 async function codegenOpenRouter(params: CodegenParams): Promise<IacFiles> {
@@ -34,11 +36,15 @@ async function codegenOpenRouter(params: CodegenParams): Promise<IacFiles> {
     "openrouter",
   );
 
+  const userMessage = params.correctiveNote
+    ? `Generate the Terraform files for this infrastructure. ${params.correctiveNote}`
+    : "Generate the Terraform files for this infrastructure.";
+
   const response = await client.chat.completions.create({
     model: params.modelId,
     messages: [
       { role: "system", content: systemPrompt },
-      { role: "user", content: "Generate the Terraform files for this infrastructure." },
+      { role: "user", content: userMessage },
     ],
     max_tokens: 8192,
     temperature: 0.1,
@@ -65,13 +71,17 @@ async function codegenAnthropic(params: CodegenParams): Promise<IacFiles> {
     "anthropic",
   );
 
+  const userMessage = params.correctiveNote
+    ? `Generate the Terraform files for this infrastructure. ${params.correctiveNote}`
+    : "Generate the Terraform files for this infrastructure.";
+
   const response = await client.messages.create({
     model: params.modelId,
     max_tokens: 8192,
     temperature: 0.1,
     system: systemPrompt,
     messages: [
-      { role: "user", content: "Generate the Terraform files for this infrastructure." },
+      { role: "user", content: userMessage },
     ],
     tools: [CODEGEN_TOOL],
     tool_choice: { type: "tool", name: "generate_terraform" },
@@ -103,8 +113,19 @@ async function codegenAnthropic(params: CodegenParams): Promise<IacFiles> {
 }
 
 export async function generateCode(params: CodegenParams): Promise<IacFiles> {
-  if (params.provider === "anthropic") {
-    return codegenAnthropic(params);
-  }
-  return codegenOpenRouter(params);
+  const attempt = async (correctiveNote?: string): Promise<IacFiles> => {
+    const p = { ...params, correctiveNote };
+    return p.provider === "anthropic" ? codegenAnthropic(p) : codegenOpenRouter(p);
+  };
+
+  const files = await attempt();
+  const validation = validateCodegenOutput(files, params.configYaml);
+  if (validation.valid) return files;
+
+  const corrective = `Fix these issues from a previous attempt: ${validation.errors.join(", ")}`;
+  const retryFiles = await attempt(corrective);
+  const retryValidation = validateCodegenOutput(retryFiles, params.configYaml);
+  if (retryValidation.valid) return retryFiles;
+
+  throw new Error(`Code generation failed after retry: ${retryValidation.errors.join(", ")}`);
 }
