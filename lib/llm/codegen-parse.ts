@@ -35,9 +35,20 @@ export function validateCodegenOutput(
     };
   }
 
-  // Check 2: Provider block
-  if (!files.mainTf.includes('provider "')) {
+  // Check 2: Provider block — exactly one
+  const providerMatches = files.mainTf.match(/\bprovider\s+"/g);
+  if (!providerMatches) {
     errors.push("mainTf is missing a provider block");
+  } else if (providerMatches.length > 1) {
+    errors.push("mainTf has duplicate provider blocks — include exactly one provider configuration");
+  }
+
+  // Check 2b: No provider blocks in variables.tf or outputs.tf
+  if (files.variablesTf.includes('provider "')) {
+    errors.push("variables.tf must not contain a provider block — only main.tf should");
+  }
+  if (files.outputsTf.includes('provider "')) {
+    errors.push("outputs.tf must not contain a provider block — only main.tf should");
   }
 
   // Check 3: Node coverage

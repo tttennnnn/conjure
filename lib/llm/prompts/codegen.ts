@@ -24,6 +24,7 @@ RULES:
 - Use the node IDs from the config as Terraform resource name suffixes (e.g. resource "aws_lb" "alb_main")
 - Map networking.sg_inbound to security group ingress rules between resources
 - Include a terraform {} block with required_providers
+- Include exactly ONE provider block in main.tf — never duplicate provider configurations across files
 - Do not use modules — output flat HCL only`;
 
 // Tool definition for Anthropic structured output
@@ -37,17 +38,17 @@ export const CODEGEN_TOOL = {
       mainTf: {
         type: "string",
         description:
-          "Contents of main.tf: terraform block, provider block, and all resource definitions.",
+          "Contents of main.tf: terraform block, exactly one provider block, and all resource definitions. Never put provider blocks in other files.",
       },
       variablesTf: {
         type: "string",
         description:
-          "Contents of variables.tf: variable declarations for configurable values.",
+          "Contents of variables.tf: variable declarations only. No provider or resource blocks.",
       },
       outputsTf: {
         type: "string",
         description:
-          "Contents of outputs.tf: output value declarations.",
+          "Contents of outputs.tf: output value declarations only. No provider or resource blocks.",
       },
     },
     required: ["mainTf", "variablesTf", "outputsTf"] as string[],
