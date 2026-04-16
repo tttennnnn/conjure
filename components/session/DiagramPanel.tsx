@@ -83,27 +83,29 @@ export default function DiagramPanel({
     if (!editMode) renderDiagram(mermaidCode);
   }, [mermaidCode, editMode, renderDiagram]);
 
-  // Attach click listeners to Mermaid SVG nodes after each render
+  // Delegated click handler: listen on the stable container so clicks keep
+  // working even if the SVG DOM is reconciled after a React re-render.
   useEffect(() => {
-    if (!svgContent || !containerRef.current || !onNodeClick) return;
+    const container = containerRef.current;
+    if (!container || !onNodeClick) return;
+    const notify = onNodeClick;
 
-    const nodeEls = containerRef.current.querySelectorAll<SVGGElement>(".node");
-    const cleanups: (() => void)[] = [];
+    function handleClick(e: MouseEvent) {
+      // Walk up from the click target to find the nearest .node ancestor
+      let el = e.target as Element | null;
+      while (el && el !== container) {
+        if (el.classList?.contains("node")) {
+          const match = el.id.match(/^flowchart-(.+)-\d+$/);
+          if (match?.[1]) notify(match[1]);
+          return;
+        }
+        el = el.parentElement;
+      }
+    }
 
-    nodeEls.forEach((el) => {
-      // Mermaid renders node IDs as "flowchart-{nodeId}-{n}"
-      const match = el.id.match(/^flowchart-(.+)-\d+$/);
-      if (!match || !match[1]) return;
-      const nodeId = match[1];
-
-      el.style.cursor = "pointer";
-      const handler = () => onNodeClick(nodeId);
-      el.addEventListener("click", handler);
-      cleanups.push(() => el.removeEventListener("click", handler));
-    });
-
-    return () => cleanups.forEach((fn) => fn());
-  }, [svgContent, onNodeClick]);
+    container.addEventListener("click", handleClick);
+    return () => container.removeEventListener("click", handleClick);
+  }, [onNodeClick]);
 
   function handleEditSave() {
     const trimmed = editValue.trim();

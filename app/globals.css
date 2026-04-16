@@ -50,6 +50,9 @@ h1, h2, h3, h4, h5, h6 {
   animation: conjure-fade-up 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* Clickable Mermaid nodes */
+.mermaid-container .node { cursor: pointer; }
+
 /* Mermaid node category styles — applied via :::className syntax */
 /* Targets the rect/polygon inside each node group rendered by Mermaid */
 
