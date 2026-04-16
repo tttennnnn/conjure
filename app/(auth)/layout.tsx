@@ -1,3 +1,4 @@
+import Link from "next/link";
 import AuthBrandingPanel from "@/components/auth/AuthBrandingPanel";
 import ConjureLogo from "@/components/ui/ConjureLogo";
 import { ChatIcon, DiagramIcon, DeployIcon } from "@/components/ui/icons";
@@ -11,10 +12,10 @@ export default function AuthLayout({
     <div className="flex min-h-full">
       {/* Left panel -- branding (desktop only) */}
       <AuthBrandingPanel>
-        <div className="conjure-fade-up flex items-center gap-3" style={{ animationDelay: "0ms" }}>
+        <Link href="/" className="conjure-fade-up flex items-center gap-3" style={{ animationDelay: "0ms" }}>
           <ConjureLogo size={36} />
           <h1 className="font-[family-name:var(--font-heading)] text-4xl font-bold tracking-tight">Conjure</h1>
-        </div>
+        </Link>
         <p className="conjure-fade-up mt-4 text-base leading-relaxed text-white/60" style={{ animationDelay: "80ms" }}>
           Describe your infrastructure in plain English. Get a diagram,
           IaC code, and deploy — all from one conversation.
@@ -47,10 +48,10 @@ export default function AuthLayout({
             }}
           />
           <div className="relative">
-            <div className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2">
               <ConjureLogo size={24} />
               <h1 className="font-[family-name:var(--font-heading)] text-2xl font-bold tracking-tight">Conjure</h1>
-            </div>
+            </Link>
             <p className="mt-1 text-sm text-white/50">Prompt-to-Infrastructure</p>
           </div>
         </div>
