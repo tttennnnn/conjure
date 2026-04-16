@@ -16,6 +16,10 @@ interface DiagramPanelProps {
   onNodeClick?: (nodeId: string) => void;
 }
 
+const MIN_ZOOM = 0.25;
+const MAX_ZOOM = 3;
+const ZOOM_STEP = 0.25;
+
 export default function DiagramPanel({
   mermaidCode,
   isStale,
@@ -31,9 +35,14 @@ export default function DiagramPanel({
   const [error, setError] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [editValue, setEditValue] = useState(mermaidCode);
+  const [zoom, setZoom] = useState(1);
   const containerRef = useRef<HTMLDivElement>(null);
   const renderCounter = useRef(0);
   const mermaidInitRef = useRef(false);
+
+  function zoomIn() { setZoom((z) => Math.min(MAX_ZOOM, parseFloat((z + ZOOM_STEP).toFixed(2)))); }
+  function zoomOut() { setZoom((z) => Math.max(MIN_ZOOM, parseFloat((z - ZOOM_STEP).toFixed(2)))); }
+  function zoomReset() { setZoom(1); }
 
   // Keep edit buffer in sync when mermaid changes externally (e.g. chat update)
   useEffect(() => {
@@ -82,6 +91,22 @@ export default function DiagramPanel({
     }
     if (!editMode) renderDiagram(mermaidCode);
   }, [mermaidCode, editMode, renderDiagram]);
+
+  // Ctrl+scroll to zoom
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    function handleWheel(e: WheelEvent) {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      setZoom((z) => {
+        const next = e.deltaY < 0 ? z + ZOOM_STEP : z - ZOOM_STEP;
+        return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, parseFloat(next.toFixed(2))));
+      });
+    }
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    return () => container.removeEventListener("wheel", handleWheel);
+  }, []);
 
   // Delegated click handler: listen on the stable container so clicks keep
   // working even if the SVG DOM is reconciled after a React re-render.
@@ -162,6 +187,14 @@ export default function DiagramPanel({
           >
             Export
           </button>
+          {/* Zoom controls — only shown when a diagram is rendered */}
+          {svgContent && !editMode && (
+            <div className="flex items-center gap-0.5 rounded border border-[var(--border)] bg-[var(--bg)] px-0.5">
+              <button onClick={zoomOut} disabled={zoom <= MIN_ZOOM} className="flex h-5 w-5 items-center justify-center text-[10px] text-[var(--muted)] hover:text-[var(--text)] disabled:opacity-30" title="Zoom out">−</button>
+              <button onClick={zoomReset} className="min-w-[36px] text-center text-[10px] text-[var(--muted)] hover:text-[var(--text)] tabular-nums" title="Reset zoom">{Math.round(zoom * 100)}%</button>
+              <button onClick={zoomIn} disabled={zoom >= MAX_ZOOM} className="flex h-5 w-5 items-center justify-center text-[10px] text-[var(--muted)] hover:text-[var(--text)] disabled:opacity-30" title="Zoom in">+</button>
+            </div>
+          )}
           <button
             onClick={onGenerateCode}
             disabled={isGenerating || !mermaidCode}
@@ -224,6 +257,7 @@ export default function DiagramPanel({
         {svgContent && (
           <div
             className="mermaid-container"
+            style={{ transform: `scale(${zoom})`, transformOrigin: "center top", transition: "transform 0.15s ease" }}
             // Safe: validateMermaid() rejects dangerous HTML patterns client-side,
             // and mermaid.js securityLevel: "strict" sanitizes SVG output
             dangerouslySetInnerHTML={{ __html: svgContent }}
