@@ -227,6 +227,35 @@ app.post("/jobs/plan", async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// POST /jobs/destroy
+// ---------------------------------------------------------------------------
+
+app.post("/jobs/destroy", async (req, res) => {
+  const validationError = validateJobRequest(req.body);
+  if (validationError) {
+    return res.status(400).json({ error: validationError });
+  }
+
+  const { stateBackend } = req.body;
+  if (!stateBackend || typeof stateBackend !== "object") {
+    return res.status(400).json({ error: "stateBackend required for destroy" });
+  }
+
+  if (checkConcurrencyLimit()) {
+    return res.status(429).json({ error: "Too many concurrent jobs" });
+  }
+
+  const { hcl, provider, credentials, region } = req.body;
+  const { jobId, jobDir } = createJob();
+
+  res.json({ jobId });
+  runTerraformJob({
+    jobId, jobDir, hcl, provider, credentials, region, stateBackend,
+    command: ["destroy", "-auto-approve", "-no-color", "-input=false"],
+  });
+});
+
+// ---------------------------------------------------------------------------
 // POST /jobs/apply
 // ---------------------------------------------------------------------------
 

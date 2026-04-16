@@ -58,6 +58,9 @@ export default async function SessionPage({
         stateBackend: (session.stateBackend as Record<string, unknown>) ?? null,
         deployJobId: session.deployJobId,
         applyJobId: session.applyJobId,
+        destroyJobId: session.destroyJobId,
+        lastDestroyStatus: session.lastDestroyStatus,
+        lastDestroyOutput: session.lastDestroyOutput,
       }}
       initialMessages={session.messages.map((m) => ({
         id: m.id,

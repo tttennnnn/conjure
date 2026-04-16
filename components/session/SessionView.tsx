@@ -36,6 +36,9 @@ interface SessionData {
   stateBackend: Record<string, unknown> | null;
   deployJobId: string | null;
   applyJobId: string | null;
+  destroyJobId: string | null;
+  lastDestroyStatus: string | null;
+  lastDestroyOutput: string | null;
 }
 
 interface SessionViewProps {
@@ -224,6 +227,9 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
                 stateBackend={session.stateBackend}
                 deployJobId={session.deployJobId}
                 applyJobId={session.applyJobId}
+                destroyJobId={session.destroyJobId}
+                lastDestroyStatus={session.lastDestroyStatus}
+                lastDestroyOutput={session.lastDestroyOutput}
                 githubRepo={session.githubRepo}
               />
             )}

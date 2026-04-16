@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useDeployPlan } from "./hooks/useDeployPlan";
 import { useDeployApply } from "./hooks/useDeployApply";
+import { useDeployDestroy } from "./hooks/useDeployDestroy";
 import { downloadAsZip } from "@/lib/utils/zip";
 import type { IacFiles } from "./CodePanel";
 import type { CredentialProfileSummary } from "@/lib/vault/credentials";
@@ -25,6 +26,9 @@ interface DeployPanelProps {
   stateBackend: Record<string, unknown> | null;
   deployJobId: string | null;
   applyJobId: string | null;
+  destroyJobId: string | null;
+  lastDestroyStatus: string | null;
+  lastDestroyOutput: string | null;
   githubRepo: string | null;
 }
 
@@ -40,6 +44,9 @@ export default function DeployPanel({
   stateBackend: initialStateBackend,
   deployJobId,
   applyJobId,
+  destroyJobId,
+  lastDestroyStatus,
+  lastDestroyOutput,
   githubRepo,
 }: DeployPanelProps) {
   const [profiles, setProfiles] = useState<CredentialProfileSummary[]>([]);
@@ -68,11 +75,15 @@ export default function DeployPanel({
   const [ghExportStatus, setGhExportStatus] = useState<"idle" | "pushing" | "success" | "error">("idle");
   const [ghExportResult, setGhExportResult] = useState<{ sha?: string; prUrl?: string; error?: string } | null>(null);
 
+  const [dangerOpen, setDangerOpen] = useState(false);
+
   const planOutputRef = useRef<HTMLPreElement>(null);
   const applyOutputRef = useRef<HTMLPreElement>(null);
+  const destroyOutputRef = useRef<HTMLPreElement>(null);
 
   const plan = useDeployPlan(sessionId, { lastPlanStatus, lastPlanOutput, deployJobId });
   const apply = useDeployApply(sessionId, { lastApplyStatus, lastApplyOutput, applyJobId });
+  const destroy = useDeployDestroy(sessionId, { lastDestroyStatus, lastDestroyOutput, destroyJobId });
 
   // Fetch credential profiles filtered by target provider
   useEffect(() => {
@@ -111,6 +122,13 @@ export default function DeployPanel({
     }
   }, [apply.output, apply.isRunning]);
 
+  // Auto-scroll destroy output
+  useEffect(() => {
+    if (destroyOutputRef.current && destroy.isRunning) {
+      destroyOutputRef.current.scrollTop = destroyOutputRef.current.scrollHeight;
+    }
+  }, [destroy.output, destroy.isRunning]);
+
   const isAwsTarget = targetEnv === "aws";
 
   const hasCredentials = useOneOff
@@ -128,6 +146,12 @@ export default function DeployPanel({
   // region and stateBackend are persisted at plan time — apply only needs credentials
   const canApply =
     plan.status === "completed" && !apply.isRunning && !isStale && hasCredentials;
+
+  const canDestroy =
+    apply.status === "completed" &&
+    destroy.status !== "completed" &&
+    !destroy.isRunning &&
+    hasCredentials;
 
   function buildStateBackend(): Record<string, unknown> {
     if (isAwsTarget) {
@@ -173,6 +197,15 @@ export default function DeployPanel({
     if (!confirmed) return;
     // region and stateBackend are read from the persisted plan server-side
     apply.runApply({ ...buildCredentialOpts() });
+  }
+
+  function handleDestroy() {
+    if (!canDestroy) return;
+    const confirmed = window.confirm(
+      "⚠️ DANGER: This will permanently destroy ALL provisioned cloud resources.\n\nThis action cannot be undone. Terraform state will be wiped.",
+    );
+    if (!confirmed) return;
+    destroy.runDestroy({ ...buildCredentialOpts() });
   }
 
   function handleDownloadZip() {
@@ -613,6 +646,73 @@ export default function DeployPanel({
             )}
           </div>
         </section>
+        {/* Danger Zone */}
+        {apply.status === "completed" && (
+          <section>
+            <button
+              onClick={() => setDangerOpen((v) => !v)}
+              className="flex w-full items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-[var(--danger-text)] opacity-60 hover:opacity-100 transition-opacity"
+            >
+              <span>Danger Zone</span>
+              <svg
+                width="10" height="10" viewBox="0 0 16 16" fill="none"
+                stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                className={`transition-transform duration-150 ${dangerOpen ? "rotate-180" : ""}`}
+              >
+                <polyline points="4 10 8 6 12 10" />
+              </svg>
+            </button>
+
+            {dangerOpen && (
+              <div className="mt-3 rounded-md border border-[var(--danger-text)]/30 bg-[var(--danger-bg)] p-3 flex flex-col gap-3">
+                <p className="text-[11px] text-[var(--danger-text)] leading-relaxed">
+                  Permanently destroys all provisioned cloud resources. This action cannot be undone.
+                </p>
+
+                <button
+                  onClick={handleDestroy}
+                  disabled={!canDestroy}
+                  className={[
+                    "self-start rounded px-3 py-1 text-[11px] font-medium transition-colors",
+                    canDestroy
+                      ? "bg-[var(--danger-text)] text-white hover:opacity-90"
+                      : "bg-[var(--surface2)] text-[var(--muted)] cursor-not-allowed",
+                  ].join(" ")}
+                >
+                  {destroy.isRunning ? "Destroying…" : "Destroy Infrastructure"}
+                </button>
+
+                {destroy.status === "failed" && destroy.error && (
+                  <div className="rounded border border-[var(--danger-text)]/25 bg-[var(--bg)] px-3 py-2 text-[11px] text-[var(--danger-text)]">
+                    {destroy.error}
+                  </div>
+                )}
+
+                {destroy.status === "completed" && (
+                  <div className="rounded border border-[var(--success-text)]/25 bg-[var(--success-bg)] px-3 py-2 text-[11px] text-[var(--success-text)]">
+                    All resources destroyed. Session reset to active.
+                  </div>
+                )}
+
+                {(destroy.output || destroy.isRunning || destroy.status) && (
+                  <div className="rounded-md border border-[var(--danger-text)]/20 overflow-hidden" style={{ backgroundColor: TERMINAL_BG }}>
+                    <div className="flex items-center justify-between px-3 py-1.5" style={{ borderBottom: `1px solid ${TERMINAL_BORDER}` }}>
+                      <span className="font-mono text-[10px]" style={{ color: TERMINAL_MUTED }}>terraform destroy</span>
+                      <StatusPill status={destroy.status} />
+                    </div>
+                    <pre
+                      ref={destroyOutputRef}
+                      className="max-h-80 overflow-auto p-3 text-[11px] leading-relaxed font-mono whitespace-pre-wrap"
+                      style={{ color: TERMINAL_TEXT }}
+                    >
+                      {destroy.output || (destroy.isRunning ? "Initializing…" : "")}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+        )}
       </div>
     </div>
   );

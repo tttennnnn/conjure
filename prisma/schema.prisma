@@ -31,6 +31,9 @@ model Session {
   applyJobId     String?   @map("apply_job_id")
   lastApplyStatus String?  @map("last_apply_status")
   lastApplyOutput String?  @map("last_apply_output") @db.Text
+  destroyJobId    String?   @map("destroy_job_id")
+  lastDestroyStatus String? @map("last_destroy_status")
+  lastDestroyOutput String? @map("last_destroy_output") @db.Text
   stateBackend            Json?     @map("state_backend")
   planRegion              String?   @map("plan_region")
   planCredentialProfileId String?   @map("plan_credential_profile_id")

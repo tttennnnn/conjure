@@ -62,7 +62,7 @@ function SessionRow({
       </div>
       <div className="flex items-center gap-1">
         <span className={`rounded-sm px-1.5 py-px text-[10px] font-medium capitalize ${STATUS_PILL[s.status] ?? STATUS_PILL.active}`}>
-          {s.status === "deploy_failed" ? "failed" : s.status}
+          {s.status === "deploy_failed" || s.status === "destroy_failed" ? "failed" : s.status}
         </span>
         <span className="text-[10px] text-[var(--hint)]">{relativeTime(s.createdAt)}</span>
       </div>
@@ -120,6 +120,7 @@ const STATUS_PILL: Record<string, string> = {
   active: "bg-[var(--info-bg)] text-[var(--info-text)]",
   deployed: "bg-[var(--success-bg)] text-[var(--success-text)]",
   deploy_failed: "bg-[var(--danger-bg)] text-[var(--danger-text)]",
+  destroy_failed: "bg-[var(--danger-bg)] text-[var(--danger-text)]",
   failed: "bg-[var(--danger-bg)] text-[var(--danger-text)]",
 };
 
