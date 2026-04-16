@@ -335,14 +335,14 @@ export default function NewSessionPage() {
                     </select>
                   )}
                   {githubBranchError ? (
-                    <p className="text-[10px] text-[var(--warn-text)]">{githubBranchError}</p>
+                    <p className="text-[10px] text-[var(--warning-text)]">{githubBranchError}</p>
                   ) : !githubBranchLoading && (
                     <p className="text-[10px] text-[var(--muted)]">
                       Only branches with Terraform files are listed.
                     </p>
                   )}
                   {selectedBranch && (
-                    <p className="text-[10px] text-[var(--warn-text)]">
+                    <p className="text-[10px] text-[var(--warning-text)]">
                       Existing .tf files won&apos;t be auto-imported yet. You can build on this repo and push changes later.
                     </p>
                   )}
@@ -350,7 +350,7 @@ export default function NewSessionPage() {
               )}
             </>
           ) : (
-            <div className="rounded-[5px] bg-[var(--warn-bg)] px-2.5 py-1.5 text-[10px] text-[var(--warn-text)]">
+            <div className="rounded-[5px] bg-[var(--warning-bg)] px-2.5 py-1.5 text-[10px] text-[var(--warning-text)]">
               ⚠ GitHub not connected.{" "}
               <button
                 onClick={() => router.push("/settings/github")}
