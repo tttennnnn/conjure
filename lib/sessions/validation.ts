@@ -45,14 +45,14 @@ const MODELS: ModelOption[] = [
     name: "Claude Sonnet 4.6",
     provider: "anthropic",
     tier: "premium",
-    anthropicId: "claude-sonnet-4-6-20250725",
+    anthropicId: "claude-sonnet-4-6",
   },
   {
     id: "claude-opus",
     name: "Claude Opus 4.6",
     provider: "anthropic",
     tier: "premium",
-    anthropicId: "claude-opus-4-6-20250501",
+    anthropicId: "claude-opus-4-6",
   },
 ];
 
