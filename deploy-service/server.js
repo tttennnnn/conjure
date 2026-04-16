@@ -139,6 +139,7 @@ function buildTerraformEnv(provider, credentials, region, jobDir) {
       AWS_ACCESS_KEY_ID: credentials.accessKeyId,
       AWS_SECRET_ACCESS_KEY: credentials.secretAccessKey,
       AWS_DEFAULT_REGION: region,
+      TF_VAR_region: region,
     };
   }
 
@@ -149,6 +150,7 @@ function buildTerraformEnv(provider, credentials, region, jobDir) {
     ...minimal,
     GOOGLE_APPLICATION_CREDENTIALS: saPath,
     GOOGLE_REGION: region,
+    TF_VAR_region: region,
   };
   // Inject the real project ID so var.project_id in generated HCL resolves correctly
   try {
