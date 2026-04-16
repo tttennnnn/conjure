@@ -96,11 +96,19 @@ export const POST = createHandler<ApplyRequestBody>(
       );
     }
 
-    // Atomically claim the apply slot — prevents duplicate in-flight applies from a race condition
+    // Atomically claim the apply slot — prevents duplicate in-flight applies from a race condition.
+    // Allow overriding a stuck "pending"/"running" status if it's been more than 10 minutes.
+    const STALE_THRESHOLD_MS = 10 * 60 * 1000;
+    const staleDeadline = new Date(Date.now() - STALE_THRESHOLD_MS);
+
     const claimed = await getPrisma().session.updateMany({
       where: {
         id: sessionId,
-        lastApplyStatus: { notIn: ["pending", "running"] },
+        OR: [
+          { lastApplyStatus: { notIn: ["pending", "running"] } },
+          { lastApplyStatus: null },
+          { updatedAt: { lt: staleDeadline } },
+        ],
       },
       data: { lastApplyStatus: "pending", lastApplyOutput: null },
     });

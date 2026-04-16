@@ -69,11 +69,19 @@ export const POST = createHandler<PlanRequestBody>(
       return NextResponse.json({ error: "stateBackend must be an object" }, { status: 400 });
     }
 
-    // Atomically claim the plan slot — prevents duplicate in-flight plans from a race condition
+    // Atomically claim the plan slot — prevents duplicate in-flight plans from a race condition.
+    // Allow overriding a stuck "pending"/"running" status if it's been more than 10 minutes.
+    const STALE_THRESHOLD_MS = 10 * 60 * 1000;
+    const staleDeadline = new Date(Date.now() - STALE_THRESHOLD_MS);
+
     const claimed = await getPrisma().session.updateMany({
       where: {
         id: sessionId,
-        lastPlanStatus: { notIn: ["pending", "running"] },
+        OR: [
+          { lastPlanStatus: { notIn: ["pending", "running"] } },
+          { lastPlanStatus: null },
+          { updatedAt: { lt: staleDeadline } },
+        ],
       },
       data: { lastPlanStatus: "pending", lastPlanOutput: null },
     });
