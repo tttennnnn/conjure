@@ -16,10 +16,10 @@ const FEW_SHOT_EXAMPLE = [
   "",
   "<<<MERMAID>>>",
   "graph TD",
-  "    internet[Internet / Users]",
-  "    alb_main[Application Load Balancer]:::cls_network",
+  "    internet([Internet / Users])",
+  "    alb_main{{Application Load Balancer}}:::cls_network",
   "    api_server[API Server]:::cls_compute",
-  "    rds_primary[PostgreSQL RDS]:::cls_database",
+  "    rds_primary[(PostgreSQL RDS)]:::cls_database",
   "",
   "    internet --> alb_main",
   "    alb_main --> api_server",
@@ -156,7 +156,7 @@ export const INFRASTRUCTURE_UPDATE_TOOL = {
       mermaidCode: {
         type: "string",
         description:
-          "The complete updated Mermaid diagram code (starting with graph TD or flowchart TD). Use short human-readable node labels (e.g. 'Application Load Balancer', 'PostgreSQL RDS') — never embed instance types or config details in labels. Include :::className suffixes on infrastructure nodes. Include only if topology changed.",
+          "The complete updated Mermaid diagram code (starting with graph TD or flowchart TD). Use category-specific shapes: [(Label)] for databases/caches/storage, {{Label}} for network/LBs, [/Label/] for queues, [Label] for compute, ([Label]) for virtual nodes. Include :::className suffixes. Include only if topology changed.",
       },
       configYaml: {
         type: "string",

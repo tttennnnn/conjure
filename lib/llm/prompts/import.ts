@@ -62,7 +62,7 @@ export const IMPORT_TOOL = {
       mermaidCode: {
         type: "string",
         description:
-          "The complete Mermaid diagram code starting with 'graph TD'. Use short human-readable node labels (e.g. 'Application Server', 'PostgreSQL RDS') — never embed instance types or config details in labels. Include :::className suffixes on infrastructure nodes.",
+          "The complete Mermaid diagram code starting with 'graph TD'. Use category-specific shapes: [(Label)] for databases/caches/storage, {{Label}} for network/LBs, [/Label/] for queues, [Label] for compute, ([Label]) for virtual nodes. Include :::className suffixes on infrastructure nodes.",
       },
       configYaml: {
         type: "string",
