@@ -130,7 +130,7 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
       <div className="flex flex-1 min-h-0">
         {/* Chat column */}
         <div className="flex w-[280px] shrink-0 flex-col border-r border-[var(--border)] bg-[var(--surface)]">
-          {(session.githubRepo || session.githubBranch) && importStatus !== "done" && (
+          {session.githubRepo && importStatus !== "done" && (
             <div className="shrink-0 border-b border-[var(--border)] bg-[var(--info-bg)] px-3 py-2 text-[10px] text-[var(--info-text)]">
               {importStatus === "error" ? (
                 <span className="text-[var(--danger-text)]">
@@ -144,20 +144,24 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
                 </span>
               ) : !mermaidCode ? (
                 <>
-                  Linked to {session.githubRepo ?? "repo"}
+                  Linked to {session.githubRepo}
                   {session.githubBranch ? ` (${session.githubBranch})` : ""}.{" "}
-                  <button
-                    onClick={handleImportFromRepo}
-                    disabled={importStatus === "importing"}
-                    className="underline disabled:opacity-60"
-                  >
-                    {importStatus === "importing" ? "Importing…" : "Import .tf files"}
-                  </button>
-                  {" "}or start from scratch.
+                  {session.githubBranch ? (
+                    <>
+                      <button
+                        onClick={handleImportFromRepo}
+                        disabled={importStatus === "importing"}
+                        className="underline disabled:opacity-60"
+                      >
+                        {importStatus === "importing" ? "Importing…" : "Import .tf files"}
+                      </button>
+                      {" "}or start from scratch.
+                    </>
+                  ) : "Start from scratch in this session."}
                 </>
               ) : (
                 <>
-                  Linked to {session.githubRepo ?? "repo"}
+                  Linked to {session.githubRepo}
                   {session.githubBranch ? ` (${session.githubBranch})` : ""}.
                 </>
               )}
