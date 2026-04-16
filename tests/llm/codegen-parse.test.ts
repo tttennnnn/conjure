@@ -96,4 +96,13 @@ nodes:
     expect(result.valid).toBe(true);
     expect(result.errors).toHaveLength(0);
   });
+
+  it("errors when configYaml is malformed YAML", () => {
+    const result = validateCodegenOutput(
+      { mainTf: VALID_MAIN_TF, variablesTf: "", outputsTf: "" },
+      ": invalid: yaml: {{{{",
+    );
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => /parse/i.test(e))).toBe(true);
+  });
 });
