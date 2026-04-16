@@ -51,7 +51,21 @@ export function validateCodegenOutput(
     errors.push("outputs.tf must not contain a provider block — only main.tf should");
   }
 
-  // Check 3: Node coverage
+  // Check 3: All variables must have defaults (no -var flags are passed at plan time)
+  const varWithoutDefault = files.variablesTf.match(
+    /variable\s+"[^"]+"\s*\{[^}]*\}/g,
+  );
+  if (varWithoutDefault) {
+    for (const block of varWithoutDefault) {
+      if (!block.includes("default")) {
+        const nameMatch = block.match(/variable\s+"([^"]+)"/);
+        const name = nameMatch ? nameMatch[1] : "unknown";
+        errors.push(`variable "${name}" in variables.tf is missing a default value — all variables must have defaults`);
+      }
+    }
+  }
+
+  // Check 4: Node coverage
   const nodeIds = extractNodeIds(configYaml);
   if (nodeIds === null) {
     errors.push("configYaml could not be parsed — unable to verify node coverage");

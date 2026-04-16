@@ -19,7 +19,7 @@ Output three Terraform files using these delimiters:
 RULES:
 - Always output all three files, even if variables.tf or outputs.tf are minimal
 - main.tf: provider block + all resource blocks derived from the config nodes
-- variables.tf: variable declarations for any configurable values (region, instance types, etc.)
+- variables.tf: variable declarations for configurable values — every variable MUST have a default value derived from the config YAML (the code will run with "terraform plan" with no -var flags)
 - outputs.tf: useful output values (endpoint URLs, ARNs, IDs)
 - Use the node IDs from the config as Terraform resource name suffixes (e.g. resource "aws_lb" "alb_main")
 - Map networking.sg_inbound to security group ingress rules between resources
@@ -43,7 +43,7 @@ export const CODEGEN_TOOL = {
       variablesTf: {
         type: "string",
         description:
-          "Contents of variables.tf: variable declarations only. No provider or resource blocks.",
+          "Contents of variables.tf: variable declarations only, each with a default value. No provider or resource blocks.",
       },
       outputsTf: {
         type: "string",
