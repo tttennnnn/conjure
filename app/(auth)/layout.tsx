@@ -1,5 +1,6 @@
 import AuthBrandingPanel from "@/components/auth/AuthBrandingPanel";
 import ConjureLogo from "@/components/ui/ConjureLogo";
+import { ChatIcon, DiagramIcon, DeployIcon } from "@/components/ui/icons";
 
 export default function AuthLayout({
   children,
@@ -10,25 +11,25 @@ export default function AuthLayout({
     <div className="flex min-h-full">
       {/* Left panel -- branding (desktop only) */}
       <AuthBrandingPanel>
-        <div className="flex items-center gap-3">
+        <div className="conjure-fade-up flex items-center gap-3" style={{ animationDelay: "0ms" }}>
           <ConjureLogo size={36} />
           <h1 className="font-[family-name:var(--font-heading)] text-4xl font-bold tracking-tight">Conjure</h1>
         </div>
-        <p className="mt-4 text-base leading-relaxed text-white/60">
+        <p className="conjure-fade-up mt-4 text-base leading-relaxed text-white/60" style={{ animationDelay: "80ms" }}>
           Describe your infrastructure in plain English. Get a diagram,
           IaC code, and deploy — all from one conversation.
         </p>
-        <div className="mt-8 space-y-4 text-sm text-white/50">
+        <div className="conjure-fade-up mt-8 space-y-4 text-sm text-white/50" style={{ animationDelay: "160ms" }}>
           <div className="flex items-start gap-3">
-            <span className="mt-0.5 text-lg">💬</span>
+            <span className="mt-0.5 shrink-0 text-white/40"><ChatIcon size={15} /></span>
             <span>Chat naturally — the AI builds your architecture as you talk</span>
           </div>
           <div className="flex items-start gap-3">
-            <span className="mt-0.5 text-lg">📐</span>
+            <span className="mt-0.5 shrink-0 text-white/40"><DiagramIcon size={15} /></span>
             <span>Live diagrams that update with every message</span>
           </div>
           <div className="flex items-start gap-3">
-            <span className="mt-0.5 text-lg">🚀</span>
+            <span className="mt-0.5 shrink-0 text-white/40"><DeployIcon size={15} /></span>
             <span>Generate IaC and deploy from the browser</span>
           </div>
         </div>
