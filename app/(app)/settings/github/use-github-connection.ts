@@ -68,7 +68,7 @@ export function useGitHubConnection() {
         const redirectTo = `${window.location.origin}/api/auth/callback?next=/settings/github`;
         const { data, error: linkError } = await supabase.auth.linkIdentity({
           provider: "github",
-          options: { redirectTo },
+          options: { redirectTo, scopes: "repo" },
         });
 
         if (linkError || !data?.url) {
