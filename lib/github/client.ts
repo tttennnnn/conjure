@@ -435,20 +435,20 @@ export async function pushFiles(params: {
     // Resolve the head SHA for the target branch — create the branch if it doesn't exist yet.
     let headSha: string;
     try {
-      const ref = await githubFetch<{ object: { sha: string } }>(
-        `${basePath}/git/ref/heads/${encodeURIComponent(params.branch)}`,
+      const branchInfo = await githubFetch<{ commit: { sha: string } }>(
+        `${basePath}/branches/${encodeURIComponent(params.branch)}`,
         token,
       );
-      headSha = ref.object.sha;
+      headSha = branchInfo.commit.sha;
     } catch (refError) {
       // Branch not found — create it from the repo's default branch.
       if (!(refError instanceof Error && refError.message.includes("404"))) throw refError;
       const repoInfo = await githubFetch<{ default_branch: string }>(basePath, token);
-      const baseRef = await githubFetch<{ object: { sha: string } }>(
-        `${basePath}/git/ref/heads/${encodeURIComponent(repoInfo.default_branch)}`,
+      const defaultBranchInfo = await githubFetch<{ commit: { sha: string } }>(
+        `${basePath}/branches/${encodeURIComponent(repoInfo.default_branch)}`,
         token,
       );
-      headSha = baseRef.object.sha;
+      headSha = defaultBranchInfo.commit.sha;
       await githubFetch(`${basePath}/git/refs`, token, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
