@@ -76,7 +76,7 @@ describe("resolveModelId", () => {
     const result = resolveModelId("claude-sonnet");
     expect(result).not.toBeNull();
     expect(result!.provider).toBe("anthropic");
-    expect(result!.modelId).toBe("claude-sonnet-4-6-20250725");
+    expect(result!.modelId).toBe("claude-sonnet-4-6");
     expect(result!.disableReasoning).toBe(false);
   });
 

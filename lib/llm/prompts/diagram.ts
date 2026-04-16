@@ -1,3 +1,11 @@
+import {
+  STYLE_CLASSES,
+  NODE_LABEL_RULES,
+  EDGE_RULES,
+  TOPOLOGY_RULES,
+  CONFIG_SCHEMA,
+} from "./shared";
+
 type Provider = "openrouter" | "anthropic";
 
 const FEW_SHOT_EXAMPLE = [
@@ -47,52 +55,37 @@ const FEW_SHOT_EXAMPLE = [
   "<<<END_CONFIG>>>",
 ].join("\n");
 
-const DELIMITER_INSTRUCTIONS = `
-When you update the infrastructure, wrap the COMPLETE updated Mermaid code in <<<MERMAID>>> and <<<END_MERMAID>>> delimiters.
-When you update the configuration, wrap the COMPLETE updated YAML in <<<CONFIG>>> and <<<END_CONFIG>>> delimiters.
-
-RULES:
-- If you change the topology, include BOTH a <<<MERMAID>>> block and a <<<CONFIG>>> block
-- If you only change config values (no new/removed nodes), include only a <<<CONFIG>>> block
-- If just answering a question, include NEITHER block -- respond with text only
+const DIAGRAM_RULES = `
+DIAGRAM RULES:
 - Mermaid MUST start with "graph TD" or "flowchart TD"
 - Config MUST be valid YAML matching the schema below
 - Every node ID in the Mermaid diagram MUST have a corresponding entry in the config, and vice versa
 - Node IDs use snake_case
 - Always output the FULL diagram and FULL config, not diffs
+${EDGE_RULES}
+${TOPOLOGY_RULES}
+- ${STYLE_CLASSES}
+
+${NODE_LABEL_RULES}`;
+
+const DELIMITER_INSTRUCTIONS = `
+When you update the infrastructure, wrap the COMPLETE updated Mermaid code in <<<MERMAID>>> and <<<END_MERMAID>>> delimiters.
+When you update the configuration, wrap the COMPLETE updated YAML in <<<CONFIG>>> and <<<END_CONFIG>>> delimiters.
+
+- If you change the topology, include BOTH a <<<MERMAID>>> block and a <<<CONFIG>>> block
+- If you only change config values (no new/removed nodes), include only a <<<CONFIG>>> block
+- If just answering a question, include NEITHER block — respond with text only
 - Your conversational text goes OUTSIDE the delimiter blocks
-- Append a style class to each infrastructure node using :::className based on resource category:
-  :::cls_compute  — aws_instance, aws_autoscaling_group, aws_lambda_function, aws_ecs_service, aws_eks_cluster, google_compute_instance, google_cloud_run_service, google_cloudfunctions_function
-  :::cls_database — aws_db_instance, aws_rds_cluster, aws_dynamodb_table, google_sql_database_instance, google_spanner_instance, google_firestore_database
-  :::cls_cache    — aws_elasticache_cluster, aws_elasticache_replication_group, google_redis_instance
-  :::cls_network  — aws_lb, aws_alb, aws_vpc, aws_subnet, aws_api_gateway_rest_api, google_compute_network, google_compute_global_forwarding_rule
-  :::cls_storage  — aws_s3_bucket, aws_efs_file_system, google_storage_bucket
-  :::cls_cdn      — aws_cloudfront_distribution
-  :::cls_queue    — aws_sqs_queue, aws_sns_topic, google_pubsub_topic
-  Example: rds_primary[PostgreSQL RDS]:::cls_database
-  Do NOT add a class to virtual/edge nodes like internet, users, client, external`;
+${DIAGRAM_RULES}`;
 
 const TOOL_INSTRUCTIONS = `
 When you need to update the infrastructure, use the update_infrastructure tool.
-When answering a question without changes, respond with text only -- do not call the tool.
+When answering a question without changes, respond with text only — do not call the tool.
 
-RULES:
 - If you change the topology, include BOTH mermaidCode and configYaml in the tool call
 - If you only change config values, include only configYaml
 - Always include chatResponse explaining what you changed
-- Every node ID in the Mermaid diagram MUST match the config, and vice versa
-- Node IDs use snake_case
-- Always output the FULL diagram and FULL config, not diffs
-- Append a style class to each infrastructure node using :::className based on resource category:
-  :::cls_compute  — aws_instance, aws_autoscaling_group, aws_lambda_function, aws_ecs_service, aws_eks_cluster, google_compute_instance, google_cloud_run_service, google_cloudfunctions_function
-  :::cls_database — aws_db_instance, aws_rds_cluster, aws_dynamodb_table, google_sql_database_instance, google_spanner_instance, google_firestore_database
-  :::cls_cache    — aws_elasticache_cluster, aws_elasticache_replication_group, google_redis_instance
-  :::cls_network  — aws_lb, aws_alb, aws_vpc, aws_subnet, aws_api_gateway_rest_api, google_compute_network, google_compute_global_forwarding_rule
-  :::cls_storage  — aws_s3_bucket, aws_efs_file_system, google_storage_bucket
-  :::cls_cdn      — aws_cloudfront_distribution
-  :::cls_queue    — aws_sqs_queue, aws_sns_topic, google_pubsub_topic
-  Example: rds_primary[PostgreSQL RDS]:::cls_database
-  Do NOT add a class to virtual/edge nodes like internet, users, client, external`;
+${DIAGRAM_RULES}`;
 
 const GUARDRAIL_INSTRUCTIONS = `
 SCOPE:
@@ -110,18 +103,6 @@ RESPONSE STYLE:
 - Be concise. Answer in 1-3 sentences for simple questions.
 - Do not use headers, bullet lists, or code blocks unless the user explicitly asks for detail or an example.
 - When making infrastructure changes, describe what changed in one short sentence.`;
-
-const CONFIG_SCHEMA = `
-CONFIG SCHEMA:
-nodes:
-  <node_id>:
-    resource: <string>          # Terraform resource type (e.g. aws_lb, aws_db_instance)
-    config:                     # resource-specific configuration
-      <key>: <value>
-    networking:                 # optional
-      subnet: public|private
-      port: <number>
-      sg_inbound: [<node_ids>]  # list of node IDs allowed inbound`;
 
 export function buildDiagramSystemPrompt(
   currentMermaid: string,
@@ -175,7 +156,7 @@ export const INFRASTRUCTURE_UPDATE_TOOL = {
       mermaidCode: {
         type: "string",
         description:
-          "The complete updated Mermaid diagram code (starting with graph TD or flowchart TD). Include only if topology changed.",
+          "The complete updated Mermaid diagram code (starting with graph TD or flowchart TD). Use short human-readable node labels (e.g. 'Application Load Balancer', 'PostgreSQL RDS') — never embed instance types or config details in labels. Include :::className suffixes on infrastructure nodes. Include only if topology changed.",
       },
       configYaml: {
         type: "string",
