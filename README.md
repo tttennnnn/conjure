@@ -43,7 +43,7 @@ When the diagram looks right, click **Generate Code** and Terraform HCL appears 
 - **Plan & Apply**: run `terraform plan` and `terraform apply` from the Deploy tab via a cloud-isolated deploy service
 - **Credential profiles**: save named AWS/GCP credential profiles in Account Settings; pick one per deploy
 - **State backend**: configure S3 or GCS remote state; apply always runs against the same inputs that were planned
-- **Export code**: download generated IaC as a .zip
+- **Export code**: download generated IaC as a .zip, or push directly to a GitHub branch from the Deploy tab
 - **Session history**: all sessions saved and resumable; in-flight jobs resume polling on page reload
 
 ---

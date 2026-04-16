@@ -302,21 +302,21 @@ conjure/
 │       ├── chat/                      # Streaming chat with LLM (implemented)
 │       ├── github/
 │       │   ├── branches/              # List branches for a repo (implemented)
+│       │   ├── export/                # Push generated IaC to a GitHub branch (implemented)
 │       │   ├── repos/                 # List user's GitHub repos (implemented)
 │       │   └── status/                # GitHub connection status (implemented)
 │       ├── models/                    # Available model list (implemented)
 │       ├── sessions/                  # Session list (implemented)
 │       │   └── [id]/                  # Session detail (implemented)
-│       ├── classify/                  # Prompt → topology / config / question (scaffold)
+│       │       └── import/            # Import .tf files from GitHub into session (implemented)
 │       ├── generate/
-│       │   ├── diagram/               # Call 1: prompt → Mermaid + Config (scaffold)
 │       │   └── code/                  # Call 2: Mermaid + Config → IaC (HCL) (implemented)
 │       ├── deploy/
 │       │   ├── plan/                  # terraform plan — dispatch job to deploy service (implemented)
 │       │   │   └── status/            # poll plan job status (implemented)
 │       │   └── apply/                 # terraform apply — dispatch job to deploy service (implemented)
 │       │       └── status/            # poll apply job status (implemented)
-│       └── credentials/               # Credential profile management (scaffold)
+│       └── credentials/               # Credential profile management (implemented)
 ├── components/
 │   ├── auth/                          # Auth components (AuthBrandingPanel, OAuthButtons, SignOutButton)
 │   ├── settings/                      # Settings components (ApiKeyCard)
@@ -354,7 +354,9 @@ conjure/
 │   │   ├── parse.ts                   # LLM output parser (implemented)
 │   │   ├── types.ts                   # LLM type definitions (implemented)
 │   │   └── prompts/
+│   │       ├── shared.ts              # Shared diagram style rules (single source of truth) (implemented)
 │   │       ├── diagram.ts             # Diagram generation prompt (implemented)
+│   │       ├── import.ts              # .tf import prompt (implemented)
 │   │       └── codegen.ts             # Code generation prompt (implemented)
 │   ├── supabase/
 │   │   ├── auth.ts                    # Shared getAuthenticatedUserId helper (implemented)
