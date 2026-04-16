@@ -63,7 +63,7 @@ export default function DeployPanel({
   // GitHub export state
   const [ghExportOpen, setGhExportOpen] = useState(false);
   const [ghBranch, setGhBranch] = useState("conjure/terraform");
-  const [ghCreatePr, setGhCreatePr] = useState(true);
+  const [ghCreatePr, setGhCreatePr] = useState(false);
   const [ghBaseBranch, setGhBaseBranch] = useState("main");
   const [ghExportStatus, setGhExportStatus] = useState<"idle" | "pushing" | "success" | "error">("idle");
   const [ghExportResult, setGhExportResult] = useState<{ sha?: string; prUrl?: string; error?: string } | null>(null);
@@ -555,12 +555,25 @@ export default function DeployPanel({
                       </div>
                     )}
 
+                    {ghCreatePr && ghBaseBranch.trim() === ghBranch.trim() && ghBranch.trim() && (
+                      <p className="text-[10px] text-[var(--danger-text)]">
+                        Branch and base branch must be different when creating a pull request.
+                      </p>
+                    )}
                     <button
                       onClick={handleGitHubExport}
-                      disabled={ghExportStatus === "pushing" || isStale || !ghBranch.trim()}
+                      disabled={
+                        ghExportStatus === "pushing" ||
+                        isStale ||
+                        !ghBranch.trim() ||
+                        (ghCreatePr && ghBaseBranch.trim() === ghBranch.trim())
+                      }
                       className={[
                         "rounded px-3 py-1 text-[11px] font-medium transition-colors self-start",
-                        ghExportStatus === "pushing" || isStale || !ghBranch.trim()
+                        ghExportStatus === "pushing" ||
+                        isStale ||
+                        !ghBranch.trim() ||
+                        (ghCreatePr && ghBaseBranch.trim() === ghBranch.trim())
                           ? "bg-[var(--surface2)] text-[var(--muted)] cursor-not-allowed"
                           : "bg-[var(--accent)] text-white hover:opacity-90",
                       ].join(" ")}
