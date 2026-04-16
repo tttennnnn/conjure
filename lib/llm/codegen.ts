@@ -10,7 +10,7 @@ export interface IacFiles {
   outputsTf: string;
 }
 
-interface CodegenParams {
+export interface CodegenParams {
   mermaidCode: string;
   configYaml: string;
   targetEnv: string;
@@ -19,10 +19,16 @@ interface CodegenParams {
   modelId: string;
   apiKey: string;
   disableReasoning: boolean;
-  correctiveNote?: string;
 }
 
-async function codegenOpenRouter(params: CodegenParams): Promise<IacFiles> {
+type CodegenCallParams = CodegenParams & { correctiveNote?: string };
+
+function buildUserMessage(correctiveNote?: string): string {
+  const base = "Generate the Terraform files for this infrastructure.";
+  return correctiveNote ? `${base} ${correctiveNote}` : base;
+}
+
+async function codegenOpenRouter(params: CodegenCallParams): Promise<IacFiles> {
   const client = new OpenAI({
     baseURL: "https://openrouter.ai/api/v1",
     apiKey: params.apiKey,
@@ -36,9 +42,7 @@ async function codegenOpenRouter(params: CodegenParams): Promise<IacFiles> {
     "openrouter",
   );
 
-  const userMessage = params.correctiveNote
-    ? `Generate the Terraform files for this infrastructure. ${params.correctiveNote}`
-    : "Generate the Terraform files for this infrastructure.";
+  const userMessage = buildUserMessage(params.correctiveNote);
 
   const response = await client.chat.completions.create({
     model: params.modelId,
@@ -60,7 +64,7 @@ async function codegenOpenRouter(params: CodegenParams): Promise<IacFiles> {
   };
 }
 
-async function codegenAnthropic(params: CodegenParams): Promise<IacFiles> {
+async function codegenAnthropic(params: CodegenCallParams): Promise<IacFiles> {
   const client = new Anthropic({ apiKey: params.apiKey });
 
   const systemPrompt = buildCodegenSystemPrompt(
@@ -71,9 +75,7 @@ async function codegenAnthropic(params: CodegenParams): Promise<IacFiles> {
     "anthropic",
   );
 
-  const userMessage = params.correctiveNote
-    ? `Generate the Terraform files for this infrastructure. ${params.correctiveNote}`
-    : "Generate the Terraform files for this infrastructure.";
+  const userMessage = buildUserMessage(params.correctiveNote);
 
   const response = await client.messages.create({
     model: params.modelId,
