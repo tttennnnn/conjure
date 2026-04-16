@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { storeGitHubToken } from "@/lib/vault/github-token";
 import { NextResponse } from "next/server";
 
 function isValidRedirectPath(path: string): boolean {
@@ -14,18 +15,29 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
+      const [{ data: { user } }, { data: { session } }] = await Promise.all([
+        supabase.auth.getUser(),
+        supabase.auth.getSession(),
+      ]);
+
+      // Persist GitHub OAuth token in Vault while it's still available
+      const providerToken = session?.provider_token;
+      if (user?.id && typeof providerToken === "string" && providerToken.length > 0) {
+        try {
+          await storeGitHubToken(user.id, providerToken);
+        } catch (err) {
+          console.error("Failed to persist GitHub token to Vault:", err);
+        }
+      }
+
       const next = searchParams.get("next");
       if (next && isValidRedirectPath(next)) {
         return NextResponse.redirect(`${origin}${next}`);
       }
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
       const isOAuth = user?.app_metadata?.provider !== "email";
 
       if (isOAuth) {
-        // GitHub OAuth sign-in/register: user is already authenticated
         return NextResponse.redirect(`${origin}/home`);
       }
 

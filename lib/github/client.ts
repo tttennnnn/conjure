@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { getGitHubToken as getGitHubTokenFromVault } from "@/lib/vault/github-token";
+import { getAuthenticatedUserId } from "@/lib/supabase/auth";
 import { isValidGithubRepo } from "@/lib/sessions/validation";
 
 export interface GitHubRepo {
@@ -69,13 +71,11 @@ type GitHubApiRepoResponse = {
 };
 
 async function getGitHubToken() {
-  const supabase = await createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const userId = await getAuthenticatedUserId();
+  if (!userId) return null;
 
-  const token = session?.provider_token;
-  return typeof token === "string" && token.length > 0 ? token : null;
+  // Read persisted token from Vault (provider_token is only ephemeral in the session)
+  return getGitHubTokenFromVault(userId);
 }
 
 function parseRepo(repo: string): { owner: string; name: string } | null {
@@ -116,10 +116,7 @@ async function githubFetch<T>(path: string, token: string, init?: RequestInit): 
 /** Check whether the current user has a valid GitHub connection. */
 export async function getGitHubStatus(): Promise<GitHubStatus> {
   const supabase = await createClient();
-  const [{ data: { user } }, { data: { session } }] = await Promise.all([
-    supabase.auth.getUser(),
-    supabase.auth.getSession(),
-  ]);
+  const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
     return { connected: false, username: null, avatarUrl: null };
@@ -132,9 +129,8 @@ export async function getGitHubStatus(): Promise<GitHubStatus> {
     return { connected: false, username: null, avatarUrl: null };
   }
 
-  const token = session?.provider_token;
-  if (typeof token !== "string" || token.length === 0) {
-    // Token missing — treat as disconnected so the user is prompted to reconnect.
+  const token = await getGitHubTokenFromVault(user.id);
+  if (!token) {
     return { connected: false, username: null, avatarUrl: null };
   }
 
