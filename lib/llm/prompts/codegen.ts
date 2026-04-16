@@ -67,10 +67,16 @@ export function buildCodegenSystemPrompt(
       ? `Use the generate_terraform tool to return all three files. Always populate all three fields.`
       : DELIMITER_INSTRUCTIONS;
 
+  const gcpProjectRule =
+    targetEnv.toLowerCase() === "gcp"
+      ? `GCP PROJECT ID: Always use var.project_id for the project argument in every GCP resource and data source. Declare it in variables.tf as: variable "project_id" { type = string; default = "" }. Never hardcode a project ID string.`
+      : null;
+
   const parts = [
     `You are a Terraform code generator. Given a Mermaid topology diagram and a configuration YAML, generate production-quality Terraform HCL.`,
     `Target environment: ${targetEnv.toUpperCase()}`,
     `IaC tool: ${iacTool}`,
+    ...(gcpProjectRule ? [gcpProjectRule] : []),
     formatInstructions,
     `DIAGRAM:\n<<<MERMAID>>>\n${mermaidCode}\n<<<END_MERMAID>>>`,
     `CONFIG:\n<<<CONFIG>>>\n${configYaml}\n<<<END_CONFIG>>>`,

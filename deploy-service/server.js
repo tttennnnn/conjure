@@ -145,11 +145,21 @@ function buildTerraformEnv(provider, credentials, region, jobDir) {
   // GCP: write SA JSON inside the job dir so cleanup() deletes it
   const saPath = path.join(jobDir, "sa.json");
   fs.writeFileSync(saPath, credentials.serviceAccountJson, "utf8");
-  return {
+  const env = {
     ...minimal,
     GOOGLE_APPLICATION_CREDENTIALS: saPath,
     GOOGLE_REGION: region,
   };
+  // Inject the real project ID so var.project_id in generated HCL resolves correctly
+  try {
+    const sa = JSON.parse(credentials.serviceAccountJson);
+    if (typeof sa.project_id === "string" && sa.project_id.length > 0) {
+      env.TF_VAR_project_id = sa.project_id;
+    }
+  } catch {
+    // SA JSON already validated upstream; this is best-effort
+  }
+  return env;
 }
 
 function runCommand(cmd, args, cwd, env, job) {
