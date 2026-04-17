@@ -1,10 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { parse } from "yaml";
 import { extractNodeYaml, replaceNodeInYaml } from "@/lib/config/node-yaml";
 import SyntaxEditor from "@/components/ui/SyntaxEditor";
 import type { ChatMessageData } from "@/lib/chat/types";
+
+const DEFAULT_WIDTH = 272;
+const MIN_WIDTH = 200;
+const MAX_WIDTH = 520;
 
 interface PropertiesDrawerProps {
   nodeId: string;
@@ -24,6 +28,45 @@ export default function PropertiesDrawer({
   const [editValue, setEditValue] = useState(() => extractNodeYaml(configYaml, nodeId));
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [width, setWidth] = useState(DEFAULT_WIDTH);
+  const dragging = useRef(false);
+  const dragListeners = useRef<{ onMove: (e: MouseEvent) => void; onUp: () => void } | null>(null);
+
+  // Clean up document listeners and body styles if the drawer unmounts mid-drag
+  useEffect(() => {
+    return () => {
+      if (dragListeners.current) {
+        document.removeEventListener("mousemove", dragListeners.current.onMove);
+        document.removeEventListener("mouseup", dragListeners.current.onUp);
+        dragListeners.current = null;
+      }
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
+    };
+  }, []);
+
+  const startDrag = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    dragging.current = true;
+    document.body.style.userSelect = "none";
+    document.body.style.cursor = "col-resize";
+
+    function onMove(ev: MouseEvent) {
+      if (!dragging.current) return;
+      setWidth((w) => Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, w - ev.movementX)));
+    }
+    function onUp() {
+      dragging.current = false;
+      dragListeners.current = null;
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    }
+    dragListeners.current = { onMove, onUp };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }, []);
 
   // Sync when the selected node changes
   useEffect(() => {
@@ -95,7 +138,12 @@ export default function PropertiesDrawer({
   }
 
   return (
-    <div className="flex w-[272px] shrink-0 flex-col border-l border-[var(--border)] bg-[var(--surface)]">
+    <div className="relative flex shrink-0 flex-col border-l border-[var(--border)] bg-[var(--surface)]" style={{ width }}>
+      {/* Drag handle — left edge resize */}
+      <div
+        onMouseDown={startDrag}
+        className="absolute inset-y-0 left-0 w-1 cursor-col-resize hover:bg-[var(--accent)]/20 transition-colors z-10"
+      />
       {/* Header */}
       <div className="flex h-[38px] shrink-0 items-center justify-between border-b border-[var(--border)] px-3">
         <span className="truncate text-[11px] font-semibold text-[var(--text)]">{nodeId}</span>
