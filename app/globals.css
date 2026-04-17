@@ -64,10 +64,18 @@ h1, h2, h3, h4, h5, h6 {
 .cls_cdn :is(rect, polygon, path, circle, ellipse) { fill: #fce7f3 !important; stroke: #ec4899 !important; }
 .cls_queue :is(rect, polygon, path, circle, ellipse) { fill: #fef9c3 !important; stroke: #eab308 !important; }
 
-/* Prism.js HCL syntax highlighting */
+/* Prism.js syntax highlighting — shared across HCL, YAML, and Mermaid editors */
 .token.keyword    { color: var(--purple-text); font-weight: 500; }
 .token.string     { color: var(--success-text); }
 .token.comment    { color: var(--hint); font-style: italic; }
 .token.number     { color: var(--warning-text); }
 .token.punctuation,
 .token.operator   { color: var(--muted); }
+/* YAML-specific tokens */
+.token.boolean    { color: var(--purple-text); font-weight: 500; }
+.token.null.keyword { color: var(--hint); }
+.token.important,
+.token.atrule     { color: var(--info-text); font-weight: 500; }
+/* Mermaid-specific tokens */
+.token.node-label { color: var(--success-text); }
+.token.arrow      { color: var(--accent); font-weight: 500; }

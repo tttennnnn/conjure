@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { validateMermaid } from "@/lib/mermaid/validate";
+import SyntaxEditor from "@/components/ui/SyntaxEditor";
 
 interface DiagramPanelProps {
   mermaidCode: string;
@@ -138,7 +139,7 @@ export default function DiagramPanel({
     setEditMode(false);
   }
 
-  function handleEditKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+  function handleEditKeyDown(e: React.KeyboardEvent) {
     if (e.key === "s" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       handleEditSave();
@@ -222,13 +223,12 @@ export default function DiagramPanel({
         className="flex flex-1 items-center justify-center overflow-auto p-6"
       >
         {editMode ? (
-          <textarea
-            autoFocus
+          <SyntaxEditor
             value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
+            onChange={setEditValue}
             onKeyDown={handleEditKeyDown}
-            className="h-full w-full resize-none rounded border border-[var(--border)] bg-[var(--surface)] p-3 font-[family-name:var(--font-mono)] text-[11px] leading-relaxed text-[var(--text)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
-            spellCheck={false}
+            language="mermaid"
+            className="h-full w-full"
           />
         ) : (<>
         {!mermaidCode && !error && (

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { parse } from "yaml";
 import { extractNodeYaml, replaceNodeInYaml } from "@/lib/config/node-yaml";
+import SyntaxEditor from "@/components/ui/SyntaxEditor";
 import type { ChatMessageData } from "@/lib/chat/types";
 
 interface PropertiesDrawerProps {
@@ -85,7 +86,7 @@ export default function PropertiesDrawer({
     }
   }
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+  function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "s" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       void handleSave();
@@ -119,15 +120,12 @@ export default function PropertiesDrawer({
         {!hasEntry ? (
           <p className="text-[11px] text-[var(--muted)]">This node has no config entry.</p>
         ) : (
-          <textarea
+          <SyntaxEditor
             value={editValue}
-            onChange={(e) => {
-              setEditValue(e.target.value);
-              setError(null);
-            }}
+            onChange={(v) => { setEditValue(v); setError(null); }}
             onKeyDown={handleKeyDown}
-            className="min-h-[180px] flex-1 resize-none rounded border border-[var(--border)] bg-[var(--bg)] p-2 font-[family-name:var(--font-mono)] text-[11px] leading-relaxed text-[var(--text)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
-            spellCheck={false}
+            language="yaml"
+            style={{ minHeight: 180 }}
           />
         )}
 
