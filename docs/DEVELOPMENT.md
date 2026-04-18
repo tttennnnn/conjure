@@ -314,8 +314,9 @@ conjure/
 │       ├── deploy/
 │       │   ├── plan/                  # terraform plan — dispatch job to deploy service (implemented)
 │       │   │   └── status/            # poll plan job status (implemented)
-│       │   └── apply/                 # terraform apply — dispatch job to deploy service (implemented)
-│       │       └── status/            # poll apply job status (implemented)
+│       │   ├── apply/                 # terraform apply — dispatch job to deploy service (implemented)
+│       │   │   └── status/            # poll apply job status (implemented)
+│       │   └── destroy/               # terraform destroy — Danger Zone confirmation flow (implemented)
 │       └── credentials/               # Credential profile management (implemented)
 ├── components/
 │   ├── auth/                          # Auth components (AuthBrandingPanel, OAuthButtons, SignOutButton)
