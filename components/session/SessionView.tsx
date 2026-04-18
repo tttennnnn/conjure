@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import ChatPanel from "./ChatPanel";
 import ChatInput from "./ChatInput";
 import DiagramPanel from "./DiagramPanel";
@@ -11,6 +11,10 @@ import SessionTopbar from "./SessionTopbar";
 import { useSessionChat } from "./hooks/useSessionChat";
 import { useCodeGeneration } from "./hooks/useCodeGeneration";
 import type { ChatMessageData } from "@/lib/chat/types";
+
+const CHAT_DEFAULT_WIDTH = 280;
+const CHAT_MIN_WIDTH = 180;
+const CHAT_MAX_WIDTH = 560;
 
 type ImportStatus = "idle" | "importing" | "done" | "error";
 
@@ -46,13 +50,50 @@ interface SessionViewProps {
   initialMessages: ChatMessage[];
 }
 
-
 export default function SessionView({ session, initialMessages }: SessionViewProps) {
   const [mermaidCode, setMermaidCode] = useState(session.mermaidCode);
   const [configYaml, setConfigYaml] = useState(session.configYaml);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [importStatus, setImportStatus] = useState<ImportStatus>("idle");
   const [importError, setImportError] = useState<string | null>(null);
+  const [chatWidth, setChatWidth] = useState(CHAT_DEFAULT_WIDTH);
+  const chatDragging = useRef(false);
+  const chatDragListeners = useRef<{ onMove: (e: MouseEvent) => void; onUp: () => void } | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (chatDragListeners.current) {
+        document.removeEventListener("mousemove", chatDragListeners.current.onMove);
+        document.removeEventListener("mouseup", chatDragListeners.current.onUp);
+        chatDragListeners.current = null;
+      }
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
+    };
+  }, []);
+
+  const startChatDrag = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    chatDragging.current = true;
+    document.body.style.userSelect = "none";
+    document.body.style.cursor = "col-resize";
+
+    function onMove(ev: MouseEvent) {
+      if (!chatDragging.current) return;
+      setChatWidth((w) => Math.min(CHAT_MAX_WIDTH, Math.max(CHAT_MIN_WIDTH, w + ev.movementX)));
+    }
+    function onUp() {
+      chatDragging.current = false;
+      chatDragListeners.current = null;
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    }
+    chatDragListeners.current = { onMove, onUp };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }, []);
 
   const codegen = useCodeGeneration(session.id, {
     iacCode: session.iacCode,
@@ -132,7 +173,12 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
 
       <div className="flex flex-1 min-h-0">
         {/* Chat column */}
-        <div className="flex w-[280px] shrink-0 flex-col border-r border-[var(--border)] bg-[var(--surface)]">
+        <div className="relative flex shrink-0 flex-col border-r border-[var(--border)] bg-[var(--surface)]" style={{ width: chatWidth }}>
+          {/* Drag handle — right edge resize */}
+          <div
+            onMouseDown={startChatDrag}
+            className="absolute inset-y-0 right-0 w-1 cursor-col-resize hover:bg-[var(--accent)]/20 transition-colors z-10"
+          />
           {session.githubRepo && importStatus !== "done" && (
             <div className="shrink-0 border-b border-[var(--border)] bg-[var(--info-bg)] px-3 py-2 text-[10px] text-[var(--info-text)]">
               {importStatus === "error" ? (
