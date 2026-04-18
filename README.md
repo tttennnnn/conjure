@@ -82,12 +82,12 @@ graph TD
             Call1["LLM Call 1\nprompt → Mermaid + YAML"]
             Call2["LLM Call 2\nMermaid + YAML → HCL"]
             Validate["Output\nValidation"]
-            DeployAPI["Plan / Apply\n(proxy + job poll)"]
+            DeployAPI["Plan / Apply / Destroy\n(proxy + job poll)"]
         end
     end
 
     subgraph DS["Deploy Service (Render)"]
-        DSApp["Node.js server\n(terraform plan/apply)"]
+        DSApp["Node.js server\n(terraform plan/apply/destroy)"]
     end
 
     subgraph LLM["LLM Provider (one per session)"]
@@ -106,6 +106,8 @@ graph TD
         GCP["GCP"]
     end
 
+    GitHub["GitHub\n(OAuth + repo API + IaC export)"]
+
     User -- "HTTPS" --> FE
     FE -- "HttpOnly cookie" --> Auth
     Auth -. "JWT verified\n+ RLS enforced" .-> API
@@ -117,16 +119,19 @@ graph TD
     OR & Anthropic -- "untrusted output" --> Validate
     FE -- "Generate Code btn" --> Call2
     DeployAPI -- "HCL + creds\n(bearer auth)" --> DSApp
-    DSApp -- "minimal env\nterraform plan/apply" --> AWS & GCP
+    DSApp -- "minimal env\nterraform plan/apply/destroy" --> AWS & GCP
     DeployAPI -- "decrypt creds\n(server-side only)" --> Vault
     API -- "Prisma ORM\n(RLS scoped)" --> DB
     Call1 & Call2 -- "decrypt user key\n(server-side only)" --> Vault
+    FE -- "OAuth login" --> GitHub
+    API -- "repos / branches / push IaC" --> GitHub
 
     style Auth fill:#fef3c7,stroke:#d97706
     style Vault fill:#fef3c7,stroke:#d97706
     style Guardrails fill:#fee2e2,stroke:#dc2626
     style Validate fill:#fee2e2,stroke:#dc2626
-    style DS fill:#f0fdf4,stroke:#16a34a
+    style DS fill:#dcfce7,stroke:#16a34a
+    style GitHub fill:#f3f4f6,stroke:#6b7280
 ```
 
 **How it works:** Each user message triggers up to three LLM calls. **Call 0** (guardrail) classifies the input as infrastructure-related or off-topic: rejected messages never reach the main model, blocking prompt injection and misuse. **Call 1** takes the approved prompt plus the current Mermaid + Config YAML and generates updates with a chat explanation. **Call 2** is triggered separately by the "Generate Code" button, converting the full Mermaid + Config pair into Terraform HCL. All session data is persisted in Supabase Postgres with Row Level Security. Users start with free models via the app-provided OpenRouter key, and can bring their own Anthropic API key for premium Claude models.
