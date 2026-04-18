@@ -130,7 +130,6 @@ graph TD
     style Vault fill:#fef3c7,stroke:#d97706
     style Guardrails fill:#fee2e2,stroke:#dc2626
     style Validate fill:#fee2e2,stroke:#dc2626
-    style DS fill:#dcfce7,stroke:#16a34a
     style GitHub fill:#f3f4f6,stroke:#6b7280
 ```
 
