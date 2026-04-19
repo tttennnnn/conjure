@@ -131,19 +131,25 @@ export default function Sidebar({ displayName, avatarUrl }: SidebarProps) {
   const [showExpanded, setShowExpanded] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [sessions, setSessions] = useState<SessionItem[]>([]);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(true);
   const menuRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(null);
   const pendingDeleteIds = useRef<Set<string>>(new Set());
 
   const fetchSessions = useCallback(async () => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
     try {
-      const res = await fetch("/api/sessions");
+      const res = await fetch("/api/sessions", { signal: controller.signal });
       if (res.ok) {
         const data: SessionItem[] = await res.json();
         setSessions(data.filter((s) => !pendingDeleteIds.current.has(s.id)));
       }
     } catch {
-      // Silently fail -- sidebar still works
+      // Silently fail -- sidebar still works; abort counts as a failure
+    } finally {
+      clearTimeout(timeout);
+      setIsLoadingSessions(false);
     }
   }, []);
 
@@ -277,7 +283,16 @@ export default function Sidebar({ displayName, avatarUrl }: SidebarProps) {
       {/* Session list */}
       {showExpanded ? (
         <div className="flex-1 overflow-x-hidden overflow-y-auto p-1.5">
-          {sessions.length === 0 ? (
+          {isLoadingSessions ? (
+            <div className={`flex flex-col gap-2 px-1.5 py-2 ${textFade}`}>
+              {[44, 32, 52, 36, 44].map((w, i) => (
+                <div key={i} className="flex flex-col gap-1">
+                  <div className="h-2 animate-pulse rounded bg-[var(--surface2)]" style={{ width: `${w}%` }} />
+                  <div className="h-1.5 w-16 animate-pulse rounded bg-[var(--surface2)]" />
+                </div>
+              ))}
+            </div>
+          ) : sessions.length === 0 ? (
             <div className={`px-2 py-6 text-center text-[11px] leading-relaxed text-[var(--hint)] ${textFade}`}>
               No sessions yet.
               <br />
