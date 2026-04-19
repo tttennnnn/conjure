@@ -1,24 +1,34 @@
 "use client";
 
-import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function SignOutButton() {
-  const router = useRouter();
+  const [signingOut, setSigningOut] = useState(false);
 
   async function handleSignOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      const res = await fetch("/api/auth/signout", {
+        method: "POST",
+        redirect: "manual",
+      });
+      if (!res.ok && res.type !== "opaqueredirect") {
+        throw new Error("Sign out failed");
+      }
+      window.location.href = "/login";
+    } catch {
+      setSigningOut(false);
+    }
   }
 
   return (
     <button
       onClick={handleSignOut}
-      className="mt-2 text-sm text-[var(--muted)] hover:text-[var(--text)]"
+      disabled={signingOut}
+      className="mt-2 text-sm text-[var(--muted)] hover:text-[var(--text)] disabled:opacity-50"
     >
-      Sign out
+      {signingOut ? "Signing out..." : "Sign out"}
     </button>
   );
 }
