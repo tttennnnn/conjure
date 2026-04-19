@@ -142,7 +142,7 @@ export default function PropertiesDrawer({
       {/* Drag handle — left edge resize */}
       <div
         onMouseDown={startDrag}
-        className="absolute inset-y-0 left-0 w-1 cursor-col-resize hover:bg-[var(--accent)]/20 transition-colors z-10"
+        className="absolute inset-y-0 left-0 w-1 cursor-col-resize hover:bg-[var(--accent)]/20 z-10"
       />
       {/* Header */}
       <div className="flex h-[38px] shrink-0 items-center justify-between border-b border-[var(--border)] px-3">

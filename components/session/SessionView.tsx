@@ -177,7 +177,7 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
           {/* Drag handle — right edge resize */}
           <div
             onMouseDown={startChatDrag}
-            className="absolute inset-y-0 right-0 w-1 cursor-col-resize hover:bg-[var(--accent)]/20 transition-colors z-10"
+            className="absolute inset-y-0 right-0 w-1 cursor-col-resize hover:bg-[var(--accent)]/20 z-10"
           />
           {session.githubRepo && importStatus !== "done" && (
             <div className="shrink-0 border-b border-[var(--border)] bg-[var(--info-bg)] px-3 py-2 text-[10px] text-[var(--info-text)]">
