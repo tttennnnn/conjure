@@ -29,6 +29,7 @@ export default function PropertiesDrawer({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [width, setWidth] = useState(DEFAULT_WIDTH);
+  const [isDragging, setIsDragging] = useState(false);
   const dragging = useRef(false);
   const dragListeners = useRef<{ onMove: (e: MouseEvent) => void; onUp: () => void } | null>(null);
 
@@ -48,6 +49,7 @@ export default function PropertiesDrawer({
   const startDrag = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     dragging.current = true;
+    setIsDragging(true);
     document.body.style.userSelect = "none";
     document.body.style.cursor = "col-resize";
 
@@ -57,6 +59,7 @@ export default function PropertiesDrawer({
     }
     function onUp() {
       dragging.current = false;
+      setIsDragging(false);
       dragListeners.current = null;
       document.body.style.userSelect = "";
       document.body.style.cursor = "";
@@ -142,7 +145,7 @@ export default function PropertiesDrawer({
       {/* Drag handle — left edge resize */}
       <div
         onMouseDown={startDrag}
-        className="absolute inset-y-0 left-0 w-1 cursor-col-resize hover:bg-[var(--accent)]/20 z-10"
+        className={`absolute inset-y-0 left-0 w-1 cursor-col-resize z-10 ${isDragging ? "bg-[var(--accent)]/20" : "hover:bg-[var(--accent)]/20"}`}
       />
       {/* Header */}
       <div className="flex h-[38px] shrink-0 items-center justify-between border-b border-[var(--border)] px-3">
