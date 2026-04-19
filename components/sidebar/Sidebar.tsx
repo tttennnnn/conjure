@@ -76,7 +76,7 @@ interface SidebarProps {
 }
 
 const SIDEBAR_ICON = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
     <rect x="3" y="3" width="18" height="18" rx="2" />
     <line x1="9" y1="3" x2="9" y2="21" />
   </svg>
@@ -267,7 +267,7 @@ export default function Sidebar({ displayName, avatarUrl }: SidebarProps) {
         {/* Absolutely positioned — immune to flex layout shifts, never blinks */}
         <button
           onClick={showExpanded ? handleCollapse : handleExpand}
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-[5px] border border-[var(--border)] text-[var(--muted)] transition-colors hover:bg-[var(--surface2)] hover:text-[var(--text)]"
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 flex h-[22px] w-7 items-center justify-center rounded-[5px] border border-[var(--border)] text-[var(--muted)] transition-colors hover:bg-[var(--surface2)] hover:text-[var(--text)]"
           title={showExpanded ? "Collapse sidebar" : "Expand sidebar"}
         >
           {SIDEBAR_ICON}
