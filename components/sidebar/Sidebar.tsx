@@ -82,9 +82,9 @@ const SIDEBAR_ICON = (
   </svg>
 );
 
-function AccountMenu({ onLogout, onClose }: { onLogout: () => void; onClose: () => void }) {
+function AccountMenu({ onLogout, onClose, style }: { onLogout: () => void; onClose: () => void; style: React.CSSProperties }) {
   return (
-    <div className="absolute bottom-full left-2 mb-1 w-44 rounded-lg border border-[var(--border)] bg-[var(--surface)] py-1 shadow-lg">
+    <div style={style} className="fixed w-44 rounded-lg border border-[var(--border)] bg-[var(--surface)] py-1 shadow-lg z-50">
       <Link
         href="/settings/api-keys"
         onClick={onClose}
@@ -130,9 +130,11 @@ export default function Sidebar({ displayName, avatarUrl }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [showExpanded, setShowExpanded] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
   const [sessions, setSessions] = useState<SessionItem[]>([]);
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
   const menuRef = useRef<HTMLDivElement>(null);
+  const accountButtonRef = useRef<HTMLButtonElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(null);
   const pendingDeleteIds = useRef<Set<string>>(new Set());
 
@@ -199,6 +201,20 @@ export default function Sidebar({ displayName, avatarUrl }: SidebarProps) {
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
+  }, [menuOpen]);
+
+  // Close menu when sidebar collapses/expands so stale fixed coords don't persist
+  useEffect(() => {
+    if (menuOpen) setMenuOpen(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collapsed]);
+
+  // Close menu on window resize to avoid detached floating position
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleResize() { setMenuOpen(false); }
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, [menuOpen]);
 
   function handleCollapse() {
@@ -325,10 +341,19 @@ export default function Sidebar({ displayName, avatarUrl }: SidebarProps) {
       {/* Bottom: account */}
       <div className="relative" ref={menuRef}>
         {menuOpen && (
-          <AccountMenu onLogout={handleLogout} onClose={() => setMenuOpen(false)} />
+          <AccountMenu onLogout={handleLogout} onClose={() => setMenuOpen(false)} style={menuStyle} />
         )}
         <button
-          onClick={() => setMenuOpen(!menuOpen)}
+          ref={accountButtonRef}
+          onClick={() => {
+            if (!menuOpen && accountButtonRef.current) {
+              const rect = accountButtonRef.current.getBoundingClientRect();
+              const MENU_WIDTH = 176; // w-44 = 11rem = 176px
+              const left = Math.min(rect.left + 8, window.innerWidth - MENU_WIDTH - 8);
+              setMenuStyle({ bottom: window.innerHeight - rect.top + 4, left });
+            }
+            setMenuOpen(!menuOpen);
+          }}
           className="flex w-full items-center py-3.5 transition-colors hover:bg-[var(--surface2)]"
           title={displayName}
         >
