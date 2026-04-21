@@ -286,6 +286,7 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
             {selectedNodeId && (
               <PropertiesDrawer
                 nodeId={selectedNodeId}
+                mermaidCode={mermaidCode}
                 configYaml={configYaml}
                 sessionId={session.id}
                 onClose={() => setSelectedNodeId(null)}

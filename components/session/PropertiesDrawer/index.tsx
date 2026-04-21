@@ -10,8 +10,17 @@ const DEFAULT_WIDTH = 272;
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 520;
 
+function extractNodeLabel(mermaidCode: string, nodeId: string): string | null {
+  const escaped = nodeId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(`(?:^|\\n)\\s*${escaped}(?:\\(\\[|\\[\\(|\\[/|\\{\\{|\\(\\(|\\[|\\()(.+?)(?:\\]\\)|\\)\\]|/\\]|\\}\\}|\\)\\)|\\]|\\))`, "m");
+  const match = mermaidCode.match(pattern);
+  if (!match?.[1]) return null;
+  return match[1].replace(/:::[\w]+$/, "").trim();
+}
+
 interface PropertiesDrawerProps {
   nodeId: string;
+  mermaidCode: string;
   configYaml: string;
   sessionId: string;
   onClose: () => void;
@@ -20,11 +29,13 @@ interface PropertiesDrawerProps {
 
 export default function PropertiesDrawer({
   nodeId,
+  mermaidCode,
   configYaml,
   sessionId,
   onClose,
   onSaved,
 }: PropertiesDrawerProps) {
+  const nodeLabel = extractNodeLabel(mermaidCode, nodeId) ?? nodeId;
   const [editValue, setEditValue] = useState(() => extractNodeYaml(configYaml, nodeId));
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -149,7 +160,7 @@ export default function PropertiesDrawer({
       />
       {/* Header */}
       <div className="flex h-[38px] shrink-0 items-center justify-between border-b border-[var(--border)] px-3">
-        <span className="truncate text-[11px] font-semibold text-[var(--text)]">{nodeId}</span>
+        <span className="truncate text-[11px] font-semibold text-[var(--text)]">{nodeLabel}</span>
         <button
           onClick={onClose}
           className="rounded p-0.5 text-[var(--muted)] hover:bg-[var(--surface2)] hover:text-[var(--text)] transition-colors"
