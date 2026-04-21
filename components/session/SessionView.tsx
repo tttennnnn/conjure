@@ -276,7 +276,6 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
               <DeployPanel
                 sessionId={session.id}
                 targetEnv={session.targetEnv}
-                iacCode={codegen.iacCode}
                 isStale={codegen.iacStale}
                 lastPlanStatus={session.lastPlanStatus}
                 lastPlanOutput={session.lastPlanOutput}

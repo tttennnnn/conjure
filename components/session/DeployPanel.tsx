@@ -4,11 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useDeployPlan } from "./hooks/useDeployPlan";
 import { useDeployApply } from "./hooks/useDeployApply";
 import { useDeployDestroy } from "./hooks/useDeployDestroy";
-import { downloadAsZip } from "@/lib/utils/zip";
-import type { IacFiles } from "./CodePanel";
 import type { CredentialProfileSummary } from "@/lib/vault/credentials";
 
-// Terminal output panel colors — intentionally dark (shell aesthetic)
 const TERMINAL_BG = "#0d1117";
 const TERMINAL_TEXT = "#e6edf3";
 const TERMINAL_BORDER = "#30363d";
@@ -17,7 +14,6 @@ const TERMINAL_MUTED = "#8b949e";
 interface DeployPanelProps {
   sessionId: string;
   targetEnv: string;
-  iacCode: IacFiles;
   isStale: boolean;
   lastPlanStatus: string | null;
   lastPlanOutput: string | null;
@@ -39,7 +35,6 @@ interface DeployPanelProps {
 export default function DeployPanel({
   sessionId,
   targetEnv,
-  iacCode,
   isStale,
   lastPlanStatus,
   lastPlanOutput,
@@ -75,6 +70,7 @@ export default function DeployPanel({
   const [gcsBucket, setGcsBucket] = useState((initialStateBackend?.bucket as string) ?? "");
   const [gcsPrefix, setGcsPrefix] = useState((initialStateBackend?.prefix as string) ?? "");
 
+  const [planApplyOpen, setPlanApplyOpen] = useState(true);
   // GitHub export state
   const [ghExportOpen, setGhExportOpen] = useState(false);
   const [ghBranch, setGhBranch] = useState("conjure/terraform");
@@ -85,15 +81,10 @@ export default function DeployPanel({
 
   const [dangerOpen, setDangerOpen] = useState(false);
 
-  const planOutputRef = useRef<HTMLPreElement>(null);
-  const applyOutputRef = useRef<HTMLPreElement>(null);
-  const destroyOutputRef = useRef<HTMLPreElement>(null);
-
   const plan = useDeployPlan(sessionId, { lastPlanStatus, lastPlanOutput, deployJobId, planRegion, planCredentialProfileId });
   const apply = useDeployApply(sessionId, { lastApplyStatus, lastApplyOutput, applyJobId });
   const destroy = useDeployDestroy(sessionId, { lastDestroyStatus, lastDestroyOutput, destroyJobId });
 
-  // Fetch credential profiles filtered by target provider
   useEffect(() => {
     setProfilesLoading(true);
     fetch("/api/credentials")
@@ -108,7 +99,6 @@ export default function DeployPanel({
       .finally(() => setProfilesLoading(false));
   }, [targetEnv]);
 
-  // Pre-fill region from selected profile
   useEffect(() => {
     if (!useOneOff && selectedProfileId) {
       const profile = profiles.find((p) => p.id === selectedProfileId);
@@ -116,26 +106,14 @@ export default function DeployPanel({
     }
   }, [selectedProfileId, profiles, useOneOff]);
 
-  // Auto-scroll plan output
+  // Auto-expand sections when jobs start running
   useEffect(() => {
-    if (planOutputRef.current && plan.isRunning) {
-      planOutputRef.current.scrollTop = planOutputRef.current.scrollHeight;
-    }
-  }, [plan.output, plan.isRunning]);
+    if (plan.isRunning || apply.isRunning) setPlanApplyOpen(true);
+  }, [plan.isRunning, apply.isRunning]);
 
-  // Auto-scroll apply output
   useEffect(() => {
-    if (applyOutputRef.current && apply.isRunning) {
-      applyOutputRef.current.scrollTop = applyOutputRef.current.scrollHeight;
-    }
-  }, [apply.output, apply.isRunning]);
-
-  // Auto-scroll destroy output
-  useEffect(() => {
-    if (destroyOutputRef.current && destroy.isRunning) {
-      destroyOutputRef.current.scrollTop = destroyOutputRef.current.scrollHeight;
-    }
-  }, [destroy.output, destroy.isRunning]);
+    if (destroy.isRunning) setDangerOpen(true);
+  }, [destroy.isRunning]);
 
   const isAwsTarget = targetEnv === "aws";
 
@@ -203,7 +181,6 @@ export default function DeployPanel({
       "This will provision real cloud resources and may incur costs. Continue?",
     );
     if (!confirmed) return;
-    // region and stateBackend are read from the persisted plan server-side
     apply.runApply({ ...buildCredentialOpts() });
   }
 
@@ -214,17 +191,6 @@ export default function DeployPanel({
     );
     if (!confirmed) return;
     destroy.runDestroy({ ...buildCredentialOpts() });
-  }
-
-  function handleDownloadZip() {
-    downloadAsZip(
-      [
-        { name: "main.tf", content: iacCode.mainTf },
-        { name: "variables.tf", content: iacCode.variablesTf },
-        { name: "outputs.tf", content: iacCode.outputsTf },
-      ],
-      "terraform.zip",
-    );
   }
 
   async function handleGitHubExport() {
@@ -449,9 +415,15 @@ export default function DeployPanel({
         {/* Plan & Apply */}
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-[11px] font-semibold uppercase tracking-wide text-[var(--muted)]">
-              Plan & Apply
-            </h3>
+            <button
+              onClick={() => setPlanApplyOpen((v) => !v)}
+              className="flex items-center gap-1.5"
+            >
+              <SectionChevron open={planApplyOpen} />
+              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-[var(--muted)]">
+                Plan & Apply
+              </h3>
+            </button>
             <div className="flex gap-2">
               <button
                 onClick={handleRunPlan}
@@ -480,267 +452,250 @@ export default function DeployPanel({
             </div>
           </div>
 
-          {/* Last plan context */}
-          {plan.planRegion && (
-            <div className="mb-2 text-[11px] text-[var(--muted)]">
-              Planned with{" "}
-              {plan.planCredentialProfileId
-                ? <span className="font-medium text-[var(--text)]">{profiles.find((p) => p.id === plan.planCredentialProfileId)?.name ?? "saved profile"}</span>
-                : <span className="font-medium text-[var(--text)]">one-off credentials</span>}
-              {" "}in <span className="font-medium text-[var(--text)]">{plan.planRegion}</span>
-            </div>
-          )}
+          {planApplyOpen && (
+            <div className="flex flex-col gap-3">
+              {/* Last plan context */}
+              {plan.planRegion && (
+                <div className="text-[11px] text-[var(--muted)]">
+                  Planned with{" "}
+                  {plan.planCredentialProfileId
+                    ? <span className="font-medium text-[var(--text)]">{profiles.find((p) => p.id === plan.planCredentialProfileId)?.name ?? "saved profile"}</span>
+                    : <span className="font-medium text-[var(--text)]">one-off credentials</span>}
+                  {" "}in <span className="font-medium text-[var(--text)]">{plan.planRegion}</span>
+                </div>
+              )}
 
-          {/* Stale output banner */}
-          {deployOutputStale && (plan.status || apply.status) && (
-            <div className="mb-2 rounded border border-[var(--warning-border)] bg-[var(--warning-bg)] px-3 py-2 text-[11px] text-[var(--warning-text)]">
-              Output from a previous code version. Run a new plan to update.
-            </div>
-          )}
+              {/* Stale output banner */}
+              {deployOutputStale && (plan.status || apply.status) && (
+                <div className="rounded border border-[var(--warning-border)] bg-[var(--warning-bg)] px-3 py-2 text-[11px] text-[var(--warning-text)]">
+                  Output from a previous code version. Run a new plan to update.
+                </div>
+              )}
 
-          {/* Plan error banner */}
-          {plan.status === "failed" && plan.error && (
-            <div className="mb-2 rounded border border-[var(--danger-text)]/25 bg-[var(--danger-bg)] px-3 py-2 text-[11px] text-[var(--danger-text)]">
-              {plan.error}
-            </div>
-          )}
+              <TerminalPanel
+                label="terraform plan"
+                status={plan.status}
+                output={plan.output}
+                isRunning={plan.isRunning}
+                error={plan.error}
+              />
 
-          {/* Plan output panel */}
-          {(plan.output || plan.isRunning || plan.status) && (
-            <div className="mb-3 rounded-md border border-[var(--border)] overflow-hidden" style={{ backgroundColor: TERMINAL_BG }}>
-              <div className="flex items-center justify-between px-3 py-1.5" style={{ borderBottom: `1px solid ${TERMINAL_BORDER}` }}>
-                <span className="font-mono text-[10px]" style={{ color: TERMINAL_MUTED }}>terraform plan</span>
-                <StatusPill status={plan.status} />
-              </div>
-              <pre
-                ref={planOutputRef}
-                className="max-h-80 overflow-auto p-3 text-[11px] leading-relaxed font-mono whitespace-pre-wrap"
-                style={{ color: TERMINAL_TEXT }}
-              >
-                {plan.output || (plan.isRunning ? "Initializing…" : "")}
-              </pre>
-            </div>
-          )}
-
-          {/* Apply error banner */}
-          {apply.status === "failed" && apply.error && (
-            <div className="mb-2 rounded border border-[var(--danger-text)]/25 bg-[var(--danger-bg)] px-3 py-2 text-[11px] text-[var(--danger-text)]">
-              {apply.error}
-            </div>
-          )}
-
-          {/* Apply output panel */}
-          {(apply.output || apply.isRunning || apply.status) && (
-            <div className="rounded-md border border-[var(--border)] overflow-hidden" style={{ backgroundColor: TERMINAL_BG }}>
-              <div className="flex items-center justify-between px-3 py-1.5" style={{ borderBottom: `1px solid ${TERMINAL_BORDER}` }}>
-                <span className="font-mono text-[10px]" style={{ color: TERMINAL_MUTED }}>terraform apply</span>
-                <StatusPill status={apply.status} />
-              </div>
-              <pre
-                ref={applyOutputRef}
-                className="max-h-80 overflow-auto p-3 text-[11px] leading-relaxed font-mono whitespace-pre-wrap"
-                style={{ color: TERMINAL_TEXT }}
-              >
-                {apply.output || (apply.isRunning ? "Initializing…" : "")}
-              </pre>
+              <TerminalPanel
+                label="terraform apply"
+                status={apply.status}
+                output={apply.output}
+                isRunning={apply.isRunning}
+                error={apply.error}
+              />
             </div>
           )}
         </section>
 
-        {/* Export */}
+        {/* GitHub Export */}
         <section>
           <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-[var(--muted)]">
-            Export
+            Export to GitHub
           </h3>
-          <div className="flex flex-col gap-3">
-            <button
-              onClick={handleDownloadZip}
-              className="self-start rounded px-3 py-1 text-[11px] text-[var(--muted)] border border-[var(--border)] hover:bg-[var(--surface2)] hover:text-[var(--text)] transition-colors"
-            >
-              Download .zip
-            </button>
 
-            {githubRepo && (
-              <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] p-3 flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-[var(--text)]">
-                    Push to <span className="font-mono font-medium">{githubRepo}</span>
-                  </span>
-                  <button
-                    onClick={() => {
-                      setGhExportOpen((v) => !v);
-                      setGhExportStatus("idle");
-                      setGhExportResult(null);
-                    }}
-                    className="text-[10px] text-[var(--muted)] hover:text-[var(--text)] transition-colors"
-                  >
-                    {ghExportOpen ? "Cancel" : "Configure"}
-                  </button>
+          <div className={[
+            "rounded-md border border-[var(--border)] bg-[var(--surface)] p-3 flex flex-col gap-3",
+            !githubRepo ? "opacity-50" : "",
+          ].join(" ")}>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-[var(--text)]">
+                {githubRepo
+                  ? <>Push to <span className="font-mono font-medium">{githubRepo}</span></>
+                  : "No GitHub repo linked"}
+              </span>
+              {githubRepo && (
+                <button
+                  onClick={() => {
+                    setGhExportOpen((v) => !v);
+                    setGhExportStatus("idle");
+                    setGhExportResult(null);
+                  }}
+                  className="text-[10px] text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+                >
+                  {ghExportOpen ? "Cancel" : "Configure"}
+                </button>
+              )}
+            </div>
+
+            {!githubRepo && (
+              <p className="text-[10px] text-[var(--muted)]">
+                This session was not linked to a GitHub repository during session setup.
+              </p>
+            )}
+
+            {githubRepo && ghExportOpen && (
+              <>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] text-[var(--muted)]">Branch</label>
+                  <input
+                    type="text"
+                    value={ghBranch}
+                    onChange={(e) => setGhBranch(e.target.value)}
+                    placeholder="conjure/terraform"
+                    className={inputClass}
+                  />
                 </div>
 
-                {ghExportOpen && (
-                  <>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[11px] text-[var(--muted)]">Branch</label>
-                      <input
-                        type="text"
-                        value={ghBranch}
-                        onChange={(e) => setGhBranch(e.target.value)}
-                        placeholder="conjure/terraform"
-                        className={inputClass}
-                      />
-                    </div>
+                <label className="flex items-center gap-1.5 text-[11px] text-[var(--muted)] cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={ghCreatePr}
+                    onChange={(e) => setGhCreatePr(e.target.checked)}
+                    className="accent-[var(--accent)]"
+                  />
+                  Open pull request
+                </label>
 
-                    <label className="flex items-center gap-1.5 text-[11px] text-[var(--muted)] cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={ghCreatePr}
-                        onChange={(e) => setGhCreatePr(e.target.checked)}
-                        className="accent-[var(--accent)]"
-                      />
-                      Open pull request
-                    </label>
-
-                    {ghCreatePr && (
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-[11px] text-[var(--muted)]">Base branch</label>
-                        <input
-                          type="text"
-                          value={ghBaseBranch}
-                          onChange={(e) => setGhBaseBranch(e.target.value)}
-                          placeholder="main"
-                          className={inputClass}
-                        />
-                      </div>
-                    )}
-
-                    {ghCreatePr && ghBaseBranch.trim() === ghBranch.trim() && ghBranch.trim() && (
-                      <p className="text-[10px] text-[var(--danger-text)]">
-                        Branch and base branch must be different when creating a pull request.
-                      </p>
-                    )}
-                    <button
-                      onClick={handleGitHubExport}
-                      disabled={
-                        ghExportStatus === "pushing" ||
-                        isStale ||
-                        !ghBranch.trim() ||
-                        (ghCreatePr && ghBaseBranch.trim() === ghBranch.trim())
-                      }
-                      className={[
-                        "rounded px-3 py-1 text-[11px] font-medium transition-colors self-start",
-                        ghExportStatus === "pushing" ||
-                        isStale ||
-                        !ghBranch.trim() ||
-                        (ghCreatePr && ghBaseBranch.trim() === ghBranch.trim())
-                          ? "bg-[var(--surface2)] text-[var(--muted)] cursor-not-allowed"
-                          : "bg-[var(--accent)] text-white hover:opacity-90",
-                      ].join(" ")}
-                    >
-                      {ghExportStatus === "pushing" ? "Pushing…" : "Push to GitHub"}
-                    </button>
-                  </>
-                )}
-
-                {/* Result feedback */}
-                {ghExportStatus === "success" && ghExportResult && (
-                  <div className="rounded border border-[var(--success-text)]/25 bg-[var(--success-bg)] px-3 py-2 text-[11px] text-[var(--success-text)] flex flex-col gap-1">
-                    <span>Pushed successfully ({ghExportResult.sha?.slice(0, 7)})</span>
-                    {ghExportResult.prUrl && (
-                      <a
-                        href={ghExportResult.prUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="underline"
-                      >
-                        View pull request →
-                      </a>
-                    )}
-                    {ghExportResult.error && (
-                      <span className="text-[var(--warning-text)]">
-                        Push succeeded but PR creation failed: {ghExportResult.error}
-                      </span>
-                    )}
+                {ghCreatePr && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[11px] text-[var(--muted)]">Base branch</label>
+                    <input
+                      type="text"
+                      value={ghBaseBranch}
+                      onChange={(e) => setGhBaseBranch(e.target.value)}
+                      placeholder="main"
+                      className={inputClass}
+                    />
                   </div>
                 )}
-                {ghExportStatus === "error" && ghExportResult?.error && (
-                  <div className="rounded border border-[var(--danger-text)]/25 bg-[var(--danger-bg)] px-3 py-2 text-[11px] text-[var(--danger-text)]">
-                    {ghExportResult.error}
-                  </div>
+
+                {ghCreatePr && ghBaseBranch.trim() === ghBranch.trim() && ghBranch.trim() && (
+                  <p className="text-[10px] text-[var(--danger-text)]">
+                    Branch and base branch must be different when creating a pull request.
+                  </p>
                 )}
+                <button
+                  onClick={handleGitHubExport}
+                  disabled={
+                    ghExportStatus === "pushing" ||
+                    isStale ||
+                    !ghBranch.trim() ||
+                    (ghCreatePr && ghBaseBranch.trim() === ghBranch.trim())
+                  }
+                  className={[
+                    "rounded px-3 py-1 text-[11px] font-medium transition-colors self-start",
+                    ghExportStatus === "pushing" ||
+                    isStale ||
+                    !ghBranch.trim() ||
+                    (ghCreatePr && ghBaseBranch.trim() === ghBranch.trim())
+                      ? "bg-[var(--surface2)] text-[var(--muted)] cursor-not-allowed"
+                      : "bg-[var(--accent)] text-white hover:opacity-90",
+                  ].join(" ")}
+                >
+                  {ghExportStatus === "pushing" ? "Pushing…" : "Push to GitHub"}
+                </button>
+              </>
+            )}
+
+            {ghExportStatus === "success" && ghExportResult && (
+              <div className="rounded border border-[var(--success-text)]/25 bg-[var(--success-bg)] px-3 py-2 text-[11px] text-[var(--success-text)] flex flex-col gap-1">
+                <span>Pushed successfully ({ghExportResult.sha?.slice(0, 7)})</span>
+                {ghExportResult.prUrl && (
+                  <a
+                    href={ghExportResult.prUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline"
+                  >
+                    View pull request →
+                  </a>
+                )}
+                {ghExportResult.error && (
+                  <span className="text-[var(--warning-text)]">
+                    Push succeeded but PR creation failed: {ghExportResult.error}
+                  </span>
+                )}
+              </div>
+            )}
+            {ghExportStatus === "error" && ghExportResult?.error && (
+              <div className="rounded border border-[var(--danger-text)]/25 bg-[var(--danger-bg)] px-3 py-2 text-[11px] text-[var(--danger-text)]">
+                {ghExportResult.error}
               </div>
             )}
           </div>
         </section>
+
         {/* Danger Zone */}
-        {(apply.status === "completed" || apply.status === "failed") && (
-          <section>
-            <button
-              onClick={() => setDangerOpen((v) => !v)}
-              className="flex w-full items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-[var(--danger-text)] opacity-60 hover:opacity-100 transition-opacity"
-            >
-              <span>Danger Zone</span>
-              <svg
-                width="10" height="10" viewBox="0 0 16 16" fill="none"
-                stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                className={`transition-transform duration-150 ${dangerOpen ? "rotate-180" : ""}`}
-              >
-                <polyline points="4 10 8 6 12 10" />
-              </svg>
-            </button>
+        <section>
+          <button
+            onClick={() => setDangerOpen((v) => !v)}
+            className="flex items-center gap-1.5"
+          >
+            <SectionChevron open={dangerOpen} muted={false} />
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--danger-text)]">
+              Danger Zone
+            </span>
+          </button>
 
-            {dangerOpen && (
-              <div className="mt-3 rounded-md border border-[var(--danger-text)]/30 bg-[var(--danger-bg)] p-3 flex flex-col gap-3">
-                <p className="text-[11px] text-[var(--danger-text)] leading-relaxed">
-                  Permanently destroys all provisioned cloud resources. This action cannot be undone.
-                </p>
+          {dangerOpen && (
+            <div className="mt-3 rounded-md border border-[var(--danger-text)]/30 bg-[var(--danger-bg)] p-3 flex flex-col gap-3">
+              {apply.status === "completed" || apply.status === "failed" ? (
+                <>
+                  <p className="text-[11px] text-[var(--danger-text)] leading-relaxed">
+                    Permanently destroys all provisioned cloud resources. This action cannot be undone.
+                  </p>
 
-                <button
-                  onClick={handleDestroy}
-                  disabled={!canDestroy}
-                  className={[
-                    "self-start rounded px-3 py-1 text-[11px] font-medium transition-colors",
-                    canDestroy
-                      ? "bg-[var(--danger-text)] text-white hover:opacity-90"
-                      : "bg-[var(--surface2)] text-[var(--muted)] cursor-not-allowed",
-                  ].join(" ")}
-                >
-                  {destroy.isRunning ? "Destroying…" : "Destroy Infrastructure"}
-                </button>
+                  <button
+                    onClick={handleDestroy}
+                    disabled={!canDestroy}
+                    className={[
+                      "self-start rounded px-3 py-1 text-[11px] font-medium transition-colors",
+                      canDestroy
+                        ? "bg-[var(--danger-text)] text-white hover:opacity-90"
+                        : "bg-[var(--surface2)] text-[var(--muted)] cursor-not-allowed",
+                    ].join(" ")}
+                  >
+                    {destroy.isRunning ? "Destroying…" : "Destroy Infrastructure"}
+                  </button>
 
-                {destroy.status === "failed" && destroy.error && (
-                  <div className="rounded border border-[var(--danger-text)]/25 bg-[var(--bg)] px-3 py-2 text-[11px] text-[var(--danger-text)]">
-                    {destroy.error}
-                  </div>
-                )}
-
-                {destroy.status === "completed" && (
-                  <div className="rounded border border-[var(--success-text)]/25 bg-[var(--success-bg)] px-3 py-2 text-[11px] text-[var(--success-text)]">
-                    All resources destroyed. Session reset to active.
-                  </div>
-                )}
-
-                {(destroy.output || destroy.isRunning || destroy.status) && (
-                  <div className="rounded-md border border-[var(--danger-text)]/20 overflow-hidden" style={{ backgroundColor: TERMINAL_BG }}>
-                    <div className="flex items-center justify-between px-3 py-1.5" style={{ borderBottom: `1px solid ${TERMINAL_BORDER}` }}>
-                      <span className="font-mono text-[10px]" style={{ color: TERMINAL_MUTED }}>terraform destroy</span>
-                      <StatusPill status={destroy.status} />
+                  {destroy.status === "completed" && (
+                    <div className="rounded border border-[var(--success-text)]/25 bg-[var(--success-bg)] px-3 py-2 text-[11px] text-[var(--success-text)]">
+                      All resources destroyed. Session reset to active.
                     </div>
-                    <pre
-                      ref={destroyOutputRef}
-                      className="max-h-80 overflow-auto p-3 text-[11px] leading-relaxed font-mono whitespace-pre-wrap"
-                      style={{ color: TERMINAL_TEXT }}
-                    >
-                      {destroy.output || (destroy.isRunning ? "Initializing…" : "")}
-                    </pre>
-                  </div>
-                )}
-              </div>
-            )}
-          </section>
-        )}
+                  )}
+
+                  <TerminalPanel
+                    label="terraform destroy"
+                    status={destroy.status}
+                    output={destroy.output}
+                    isRunning={destroy.isRunning}
+                    error={destroy.error}
+                  />
+                </>
+              ) : apply.isRunning ? (
+                <p className="text-[11px] text-[var(--muted)]">
+                  Apply is in progress — check back once it completes.
+                </p>
+              ) : (
+                <p className="text-[11px] text-[var(--muted)]">
+                  No resources have been provisioned.
+                </p>
+              )}
+            </div>
+          )}
+        </section>
       </div>
     </div>
+  );
+}
+
+function SectionChevron({ open, muted = true }: { open: boolean; muted?: boolean }) {
+  return (
+    <svg
+      width="10" height="10" viewBox="0 0 16 16" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      className={[
+        "shrink-0 transition-transform duration-150",
+        open ? "rotate-90" : "",
+        muted ? "text-[var(--muted)]" : "text-[var(--danger-text)]",
+      ].join(" ")}
+    >
+      <polyline points="6 4 10 8 6 12" />
+    </svg>
   );
 }
 
@@ -763,5 +718,101 @@ function StatusPill({ status }: { status: string | null }) {
     >
       {status === "running" ? "running…" : status}
     </span>
+  );
+}
+
+function TerminalPanel({
+  label,
+  status,
+  output,
+  isRunning,
+  error,
+}: {
+  label: string;
+  status: string | null;
+  output: string | null;
+  isRunning: boolean;
+  error: string | null;
+}) {
+  const preRef = useRef<HTMLPreElement>(null);
+  const [expanded, setExpanded] = useState(status !== "failed");
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (isRunning) setExpanded(true);
+  }, [isRunning]);
+
+  useEffect(() => {
+    if (preRef.current && isRunning) {
+      preRef.current.scrollTop = preRef.current.scrollHeight;
+    }
+  }, [output, isRunning]);
+
+  const content = output || (isRunning ? "Initializing…" : "");
+  if (!content && !status) return null;
+
+  function handleCopy(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!output) return;
+    navigator.clipboard.writeText(output).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }).catch(() => {});
+  }
+
+  return (
+    <div className="rounded-md border border-[var(--border)] overflow-hidden" style={{ backgroundColor: TERMINAL_BG }}>
+      <div
+        onClick={() => setExpanded((v) => !v)}
+        className="flex items-center justify-between px-3 py-1.5 cursor-pointer select-none"
+        style={expanded && content ? { borderBottom: `1px solid ${TERMINAL_BORDER}` } : undefined}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <svg
+            width="10" height="10" viewBox="0 0 16 16" fill="none"
+            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            className={`shrink-0 transition-transform duration-150 ${expanded ? "rotate-90" : ""}`}
+            style={{ color: TERMINAL_MUTED }}
+          >
+            <polyline points="6 4 10 8 6 12" />
+          </svg>
+          <span className="font-mono text-[10px] shrink-0" style={{ color: TERMINAL_MUTED }}>{label}</span>
+          <StatusPill status={status} />
+          {status === "failed" && error && !expanded && (
+            <span className="text-[10px] text-[var(--danger-text)] truncate">{error}</span>
+          )}
+        </div>
+        {output && (
+          <button
+            onClick={handleCopy}
+            className="shrink-0 ml-2 text-[10px] hover:text-[var(--text)] transition-colors"
+            style={{ color: TERMINAL_MUTED }}
+          >
+            {copied ? "Copied" : "Copy"}
+          </button>
+        )}
+      </div>
+      {expanded && (
+        <>
+          {content && (
+            <pre
+              ref={preRef}
+              className="max-h-80 overflow-auto p-3 text-[11px] leading-relaxed font-mono whitespace-pre-wrap"
+              style={{ color: TERMINAL_TEXT }}
+            >
+              {content}
+            </pre>
+          )}
+          {status === "failed" && error && (
+            <div
+              className="px-3 py-2 text-[10px] text-[var(--danger-text)]"
+              style={{ borderTop: content ? `1px solid ${TERMINAL_BORDER}` : undefined }}
+            >
+              {error}
+            </div>
+          )}
+        </>
+      )}
+    </div>
   );
 }
