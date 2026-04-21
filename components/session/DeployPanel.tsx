@@ -31,6 +31,7 @@ interface DeployPanelProps {
   lastDestroyOutput: string | null;
   planCredentialProfileId: string | null;
   planRegion: string | null;
+  deployOutputStale: boolean;
   githubRepo: string | null;
 }
 
@@ -51,6 +52,7 @@ export default function DeployPanel({
   lastDestroyOutput,
   planCredentialProfileId,
   planRegion,
+  deployOutputStale: initialDeployOutputStale,
   githubRepo,
 }: DeployPanelProps) {
   const [profiles, setProfiles] = useState<CredentialProfileSummary[]>([]);
@@ -80,6 +82,8 @@ export default function DeployPanel({
   const [ghExportResult, setGhExportResult] = useState<{ sha?: string; prUrl?: string; error?: string } | null>(null);
 
   const [dangerOpen, setDangerOpen] = useState(false);
+  const [outputStale, setOutputStale] = useState(initialDeployOutputStale);
+  const prevIsStale = useRef(isStale);
 
   const planOutputRef = useRef<HTMLPreElement>(null);
   const applyOutputRef = useRef<HTMLPreElement>(null);
@@ -111,6 +115,21 @@ export default function DeployPanel({
       if (profile?.defaultRegion) setRegion(profile.defaultRegion);
     }
   }, [selectedProfileId, profiles, useOneOff]);
+
+  // Code regenerated (isStale went true→false) while plan/apply output exists → mark stale
+  useEffect(() => {
+    if (prevIsStale.current && !isStale && (plan.status || apply.status)) {
+      setOutputStale(true);
+    }
+    prevIsStale.current = isStale;
+  }, [isStale, plan.status, apply.status]);
+
+  // New plan started → output matches current code
+  useEffect(() => {
+    if (plan.status === "pending" || plan.status === "running") {
+      setOutputStale(false);
+    }
+  }, [plan.status]);
 
   // Auto-scroll plan output
   useEffect(() => {
@@ -147,9 +166,8 @@ export default function DeployPanel({
     hasCredentials && region.trim().length > 0 && hasStateBackend &&
     !isStale && !plan.isRunning && !apply.isRunning;
 
-  // region and stateBackend are persisted at plan time — apply only needs credentials
   const canApply =
-    plan.status === "completed" && !apply.isRunning && !isStale && hasCredentials;
+    plan.status === "completed" && !apply.isRunning && !isStale && !outputStale && hasCredentials;
 
   const canDestroy =
     (apply.status === "completed" || apply.status === "failed") &&
@@ -477,13 +495,20 @@ export default function DeployPanel({
           </div>
 
           {/* Last plan context */}
-          {plan.status && plan.planRegion && (
+          {plan.planRegion && (
             <div className="mb-2 text-[11px] text-[var(--muted)]">
               Planned with{" "}
               {plan.planCredentialProfileId
                 ? <span className="font-medium text-[var(--text)]">{profiles.find((p) => p.id === plan.planCredentialProfileId)?.name ?? "saved profile"}</span>
                 : <span className="font-medium text-[var(--text)]">one-off credentials</span>}
               {" "}in <span className="font-medium text-[var(--text)]">{plan.planRegion}</span>
+            </div>
+          )}
+
+          {/* Stale output banner */}
+          {outputStale && (plan.status || apply.status) && (
+            <div className="mb-2 rounded border border-[var(--warning-border)] bg-[var(--warning-bg)] px-3 py-2 text-[11px] text-[var(--warning-text)]">
+              Output from a previous code version. Run a new plan to update.
             </div>
           )}
 
@@ -662,7 +687,7 @@ export default function DeployPanel({
           </div>
         </section>
         {/* Danger Zone */}
-        {apply.status === "completed" && (
+        {(apply.status === "completed" || apply.status === "failed") && (
           <section>
             <button
               onClick={() => setDangerOpen((v) => !v)}

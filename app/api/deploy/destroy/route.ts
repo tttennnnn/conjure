@@ -53,9 +53,9 @@ export const POST = createHandler<DestroyRequestBody>(
     if (!session.iacCode) {
       return NextResponse.json({ error: "No code generated yet" }, { status: 400 });
     }
-    if (session.lastApplyStatus !== "completed") {
+    if (session.lastApplyStatus !== "completed" && session.lastApplyStatus !== "failed") {
       return NextResponse.json(
-        { error: "Destroy requires a successful apply first" },
+        { error: "Destroy requires a completed or failed apply" },
         { status: 400 },
       );
     }

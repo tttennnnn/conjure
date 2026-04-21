@@ -45,6 +45,7 @@ interface SessionData {
   lastDestroyOutput: string | null;
   planCredentialProfileId: string | null;
   planRegion: string | null;
+  deployOutputStale: boolean;
 }
 
 interface SessionViewProps {
@@ -283,6 +284,7 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
                 lastDestroyOutput={session.lastDestroyOutput}
                 planCredentialProfileId={session.planCredentialProfileId}
                 planRegion={session.planRegion}
+                deployOutputStale={session.deployOutputStale}
                 githubRepo={session.githubRepo}
               />
             )}

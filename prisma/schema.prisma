@@ -37,6 +37,7 @@ model Session {
   stateBackend            Json?     @map("state_backend")
   planRegion              String?   @map("plan_region")
   planCredentialProfileId String?   @map("plan_credential_profile_id")
+  deployOutputStale       Boolean   @default(false) @map("deploy_output_stale")
   messages                Message[]
 
   @@map("sessions")

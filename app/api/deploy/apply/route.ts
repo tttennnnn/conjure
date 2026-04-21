@@ -64,6 +64,12 @@ export const POST = createHandler<ApplyRequestBody>(
         { status: 400 },
       );
     }
+    if (session.deployOutputStale) {
+      return NextResponse.json(
+        { error: "Code has been regenerated since the last plan — run a new plan first" },
+        { status: 409 },
+      );
+    }
 
     // Enforce credential binding: apply must use the same identity as the reviewed plan.
     // This prevents applying reviewed HCL to a different cloud account than the one that was planned.
