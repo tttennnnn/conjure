@@ -4,6 +4,8 @@ import { redirect, notFound } from "next/navigation";
 import SessionView from "@/components/session/SessionView";
 import type { EventKind } from "@/lib/chat/types";
 
+export const dynamic = "force-dynamic";
+
 export default async function SessionPage({
   params,
 }: {
@@ -38,6 +40,7 @@ export default async function SessionPage({
 
   return (
     <SessionView
+      key={session.id}
       session={{
         id: session.id,
         name: session.name,
