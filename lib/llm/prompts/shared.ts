@@ -52,4 +52,6 @@ nodes:
     networking:                 # optional
       subnet: public|private
       port: <number>
-      sg_inbound: [<node_ids>]  # list of node IDs allowed inbound`;
+      sg_inbound: [<node_ids>]  # list of node IDs allowed inbound
+
+- Do NOT include region or location in the config. Region is a deploy-time setting chosen by the user in the Deploy tab and applies to all resources.`;
