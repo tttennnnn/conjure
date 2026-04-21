@@ -148,7 +148,7 @@ export default function DeployPanel({
     plan.status === "completed" && !apply.isRunning && !isStale && hasCredentials;
 
   const canDestroy =
-    apply.status === "completed" &&
+    (apply.status === "completed" || apply.status === "failed") &&
     destroy.status !== "completed" &&
     !destroy.isRunning &&
     hasCredentials;
