@@ -45,7 +45,8 @@ interface SessionData {
   lastDestroyOutput: string | null;
   planCredentialProfileId: string | null;
   planRegion: string | null;
-  deployOutputStale: boolean;
+  planOutputStale: boolean;
+  applyOutputStale: boolean;
 }
 
 interface SessionViewProps {
@@ -101,10 +102,11 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
     document.addEventListener("mouseup", onUp);
   }, []);
 
-  const [deployOutputStale, setDeployOutputStale] = useState(session.deployOutputStale);
+  const [planOutputStale, setPlanOutputStale] = useState(session.planOutputStale);
+  const [applyOutputStale, setApplyOutputStale] = useState(session.applyOutputStale);
 
   const handleCodeRegenerated = useCallback(() => {
-    setDeployOutputStale(true);
+    setPlanOutputStale(true);
   }, []);
 
   const codegen = useCodeGeneration(session.id, {
@@ -289,8 +291,10 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
                 lastDestroyOutput={session.lastDestroyOutput}
                 planCredentialProfileId={session.planCredentialProfileId}
                 planRegion={session.planRegion}
-                deployOutputStale={deployOutputStale}
-                onPlanStarted={() => setDeployOutputStale(false)}
+                planOutputStale={planOutputStale}
+                applyOutputStale={applyOutputStale}
+                onPlanStarted={() => { setPlanOutputStale(false); setApplyOutputStale(true); }}
+                onApplyStarted={() => setApplyOutputStale(false)}
                 githubRepo={session.githubRepo}
               />
             )}

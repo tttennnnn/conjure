@@ -66,7 +66,8 @@ export default async function SessionPage({
         lastDestroyOutput: session.lastDestroyOutput,
         planCredentialProfileId: session.planCredentialProfileId,
         planRegion: session.planRegion,
-        deployOutputStale: session.deployOutputStale,
+        planOutputStale: session.planOutputStale,
+        applyOutputStale: session.applyOutputStale,
       }}
       initialMessages={session.messages.map((m) => ({
         id: m.id,

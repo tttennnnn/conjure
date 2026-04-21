@@ -59,7 +59,7 @@ export const POST = createHandler<{ sessionId?: string }>(
         data: {
           iacCode: files as unknown as Record<string, string>,
           iacStale: false,
-          deployOutputStale: true,
+          planOutputStale: true,
         },
       });
 

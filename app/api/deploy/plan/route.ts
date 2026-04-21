@@ -83,13 +83,7 @@ export const POST = createHandler<PlanRequestBody>(
           { updatedAt: { lt: staleDeadline } },
         ],
       },
-      data: {
-        lastPlanStatus: "pending",
-        lastPlanOutput: null,
-        lastApplyStatus: null,
-        lastApplyOutput: null,
-        deployOutputStale: false,
-      },
+      data: { lastPlanStatus: "pending", lastPlanOutput: null, planOutputStale: false, applyOutputStale: true },
     });
     if (claimed.count === 0) {
       return NextResponse.json({ error: "A plan is already in progress" }, { status: 409 });

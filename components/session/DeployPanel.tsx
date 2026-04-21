@@ -27,8 +27,10 @@ interface DeployPanelProps {
   lastDestroyOutput: string | null;
   planCredentialProfileId: string | null;
   planRegion: string | null;
-  deployOutputStale: boolean;
+  planOutputStale: boolean;
+  applyOutputStale: boolean;
   onPlanStarted: () => void;
+  onApplyStarted: () => void;
   githubRepo: string | null;
 }
 
@@ -48,8 +50,10 @@ export default function DeployPanel({
   lastDestroyOutput,
   planCredentialProfileId,
   planRegion,
-  deployOutputStale,
+  planOutputStale,
+  applyOutputStale,
   onPlanStarted,
+  onApplyStarted,
   githubRepo,
 }: DeployPanelProps) {
   const [profiles, setProfiles] = useState<CredentialProfileSummary[]>([]);
@@ -130,7 +134,7 @@ export default function DeployPanel({
     !isStale && !plan.isRunning && !apply.isRunning;
 
   const canApply =
-    plan.status === "completed" && !apply.isRunning && !isStale && !deployOutputStale && hasCredentials;
+    plan.status === "completed" && !apply.isRunning && !isStale && !planOutputStale && hasCredentials;
 
   const canDestroy =
     (apply.status === "completed" || apply.status === "failed") &&
@@ -181,6 +185,7 @@ export default function DeployPanel({
       "This will provision real cloud resources and may incur costs. Continue?",
     );
     if (!confirmed) return;
+    onApplyStarted();
     apply.runApply({ ...buildCredentialOpts() });
   }
 
@@ -465,19 +470,13 @@ export default function DeployPanel({
                 </div>
               )}
 
-              {/* Stale output banner */}
-              {deployOutputStale && (plan.status || apply.status) && (
-                <div className="rounded border border-[var(--warning-border)] bg-[var(--warning-bg)] px-3 py-2 text-[11px] text-[var(--warning-text)]">
-                  Output from a previous code version. Run a new plan to update.
-                </div>
-              )}
-
               <TerminalPanel
                 label="terraform plan"
                 status={plan.status}
                 output={plan.output}
                 isRunning={plan.isRunning}
                 error={plan.error}
+                staleMessage={planOutputStale && plan.status ? "From a previous code version — regenerate code and re-run plan." : null}
               />
 
               <TerminalPanel
@@ -486,6 +485,7 @@ export default function DeployPanel({
                 output={apply.output}
                 isRunning={apply.isRunning}
                 error={apply.error}
+                staleMessage={applyOutputStale && apply.status ? "From a previous plan cycle — run apply again to update." : null}
               />
             </div>
           )}
@@ -727,12 +727,14 @@ function TerminalPanel({
   output,
   isRunning,
   error,
+  staleMessage = null,
 }: {
   label: string;
   status: string | null;
   output: string | null;
   isRunning: boolean;
   error: string | null;
+  staleMessage?: string | null;
 }) {
   const preRef = useRef<HTMLPreElement>(null);
   const [expanded, setExpanded] = useState(status !== "failed");
@@ -781,6 +783,9 @@ function TerminalPanel({
           {status === "failed" && error && !expanded && (
             <span className="text-[10px] text-[var(--danger-text)] truncate">{error}</span>
           )}
+          {staleMessage && !expanded && (
+            <span className="text-[10px] text-[var(--warning-text)] truncate">{staleMessage}</span>
+          )}
         </div>
         {output && (
           <button
@@ -794,6 +799,14 @@ function TerminalPanel({
       </div>
       {expanded && (
         <>
+          {staleMessage && (
+            <div
+              className="px-3 py-2 text-[10px] text-[var(--warning-text)]"
+              style={{ borderBottom: `1px solid ${TERMINAL_BORDER}`, backgroundColor: "rgba(210,153,34,0.08)" }}
+            >
+              {staleMessage}
+            </div>
+          )}
           {content && (
             <pre
               ref={preRef}

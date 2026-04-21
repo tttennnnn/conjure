@@ -64,7 +64,7 @@ export const POST = createHandler<ApplyRequestBody>(
         { status: 400 },
       );
     }
-    if (session.deployOutputStale) {
+    if (session.planOutputStale) {
       return NextResponse.json(
         { error: "Code has been regenerated since the last plan — run a new plan first" },
         { status: 409 },
@@ -116,7 +116,7 @@ export const POST = createHandler<ApplyRequestBody>(
           { updatedAt: { lt: staleDeadline } },
         ],
       },
-      data: { lastApplyStatus: "pending", lastApplyOutput: null },
+      data: { lastApplyStatus: "pending", lastApplyOutput: null, applyOutputStale: false },
     });
     if (claimed.count === 0) {
       return NextResponse.json({ error: "An apply is already in progress" }, { status: 409 });
