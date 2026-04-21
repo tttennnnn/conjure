@@ -175,6 +175,14 @@ export default function DiagramPanel({
         {/* Spacer so toolbar right-aligns whether or not the tab label is shown */}
         {hasOuterTabs && <div />}
         <div className="flex items-center gap-1 pb-1">
+          {editMode && (
+            <button
+              onClick={() => { setEditValue(mermaidCode); setEditMode(false); }}
+              className="rounded px-2 py-0.5 text-[10px] text-[var(--muted)] hover:bg-[var(--surface2)] hover:text-[var(--text)] transition-colors"
+            >
+              Cancel
+            </button>
+          )}
           <button
             onClick={() => { if (editMode) { handleEditSave(); } else { setEditValue(mermaidCode); setEditMode(true); } }}
             className={["rounded px-2 py-0.5 text-[10px] transition-colors", editMode ? "bg-[var(--accent)] text-white" : "text-[var(--muted)] hover:bg-[var(--surface2)] hover:text-[var(--text)]"].join(" ")}
