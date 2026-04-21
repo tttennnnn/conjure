@@ -43,6 +43,8 @@ interface SessionData {
   destroyJobId: string | null;
   lastDestroyStatus: string | null;
   lastDestroyOutput: string | null;
+  planCredentialProfileId: string | null;
+  planRegion: string | null;
 }
 
 interface SessionViewProps {
@@ -279,6 +281,8 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
                 destroyJobId={session.destroyJobId}
                 lastDestroyStatus={session.lastDestroyStatus}
                 lastDestroyOutput={session.lastDestroyOutput}
+                planCredentialProfileId={session.planCredentialProfileId}
+                planRegion={session.planRegion}
                 githubRepo={session.githubRepo}
               />
             )}

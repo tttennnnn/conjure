@@ -9,11 +9,19 @@ export interface DeployPlanState {
   output: string;
   error: string | null;
   isRunning: boolean;
+  planRegion: string | null;
+  planCredentialProfileId: string | null;
 }
 
 export function useDeployPlan(
   sessionId: string,
-  initial: { lastPlanStatus: string | null; lastPlanOutput: string | null; deployJobId: string | null },
+  initial: {
+    lastPlanStatus: string | null;
+    lastPlanOutput: string | null;
+    deployJobId: string | null;
+    planRegion: string | null;
+    planCredentialProfileId: string | null;
+  },
 ) {
   const initialStatus = (initial.lastPlanStatus as PlanStatus) ?? null;
   const initialIsRunning = initialStatus === "pending" || initialStatus === "running";
@@ -24,6 +32,8 @@ export function useDeployPlan(
     output: initial.lastPlanOutput ?? "",
     error: null,
     isRunning: initialIsRunning,
+    planRegion: initial.planRegion,
+    planCredentialProfileId: initial.planCredentialProfileId,
   });
 
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -95,7 +105,15 @@ export function useDeployPlan(
       stateBackend?: Record<string, unknown>;
     }) => {
       stopPolling();
-      setState({ jobId: null, status: "pending", output: "", error: null, isRunning: true });
+      setState({
+        jobId: null,
+        status: "pending",
+        output: "",
+        error: null,
+        isRunning: true,
+        planRegion: opts.region,
+        planCredentialProfileId: opts.credentialProfileId ?? null,
+      });
 
       try {
         const res = await fetch("/api/deploy/plan", {
@@ -107,20 +125,20 @@ export function useDeployPlan(
         const data = await res.json() as { jobId?: string; error?: string };
 
         if (!res.ok) {
-          setState({ jobId: null, status: "failed", output: "", error: data.error ?? "Plan failed", isRunning: false });
+          setState((prev) => ({ ...prev, jobId: null, status: "failed", output: "", error: data.error ?? "Plan failed", isRunning: false }));
           return;
         }
 
         const { jobId } = data;
         if (!jobId) {
-          setState({ jobId: null, status: "failed", output: "", error: "No job ID returned", isRunning: false });
+          setState((prev) => ({ ...prev, jobId: null, status: "failed", output: "", error: "No job ID returned", isRunning: false }));
           return;
         }
 
         setState((prev) => ({ ...prev, jobId }));
         pollTimerRef.current = setTimeout(() => poll(jobId), POLL_INTERVAL_MS);
       } catch {
-        setState({ jobId: null, status: "failed", output: "", error: "Network error", isRunning: false });
+        setState((prev) => ({ ...prev, jobId: null, status: "failed", output: "", error: "Network error", isRunning: false }));
       }
     },
     [sessionId, poll, stopPolling],

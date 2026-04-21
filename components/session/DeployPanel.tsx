@@ -29,6 +29,8 @@ interface DeployPanelProps {
   destroyJobId: string | null;
   lastDestroyStatus: string | null;
   lastDestroyOutput: string | null;
+  planCredentialProfileId: string | null;
+  planRegion: string | null;
   githubRepo: string | null;
 }
 
@@ -47,6 +49,8 @@ export default function DeployPanel({
   destroyJobId,
   lastDestroyStatus,
   lastDestroyOutput,
+  planCredentialProfileId,
+  planRegion,
   githubRepo,
 }: DeployPanelProps) {
   const [profiles, setProfiles] = useState<CredentialProfileSummary[]>([]);
@@ -81,7 +85,7 @@ export default function DeployPanel({
   const applyOutputRef = useRef<HTMLPreElement>(null);
   const destroyOutputRef = useRef<HTMLPreElement>(null);
 
-  const plan = useDeployPlan(sessionId, { lastPlanStatus, lastPlanOutput, deployJobId });
+  const plan = useDeployPlan(sessionId, { lastPlanStatus, lastPlanOutput, deployJobId, planRegion, planCredentialProfileId });
   const apply = useDeployApply(sessionId, { lastApplyStatus, lastApplyOutput, applyJobId });
   const destroy = useDeployDestroy(sessionId, { lastDestroyStatus, lastDestroyOutput, destroyJobId });
 
@@ -471,6 +475,17 @@ export default function DeployPanel({
               </button>
             </div>
           </div>
+
+          {/* Last plan context */}
+          {plan.status && plan.planRegion && (
+            <div className="mb-2 text-[11px] text-[var(--muted)]">
+              Planned with{" "}
+              {plan.planCredentialProfileId
+                ? <span className="font-medium text-[var(--text)]">{profiles.find((p) => p.id === plan.planCredentialProfileId)?.name ?? "saved profile"}</span>
+                : <span className="font-medium text-[var(--text)]">one-off credentials</span>}
+              {" "}in <span className="font-medium text-[var(--text)]">{plan.planRegion}</span>
+            </div>
+          )}
 
           {/* Plan error banner */}
           {plan.status === "failed" && plan.error && (
