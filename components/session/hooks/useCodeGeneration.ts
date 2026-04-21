@@ -4,6 +4,7 @@ import type { IacFiles } from "../CodePanel";
 export function useCodeGeneration(
   sessionId: string,
   initial: { iacCode: IacFiles | null; iacStale: boolean },
+  onCodeRegenerated?: () => void,
 ) {
   const [iacCode, setIacCode] = useState<IacFiles | null>(initial.iacCode);
   const [iacStale, setIacStale] = useState(initial.iacStale);
@@ -29,12 +30,13 @@ export function useCodeGeneration(
       setIacCode(files);
       setIacStale(false);
       setActiveTab("code");
+      onCodeRegenerated?.();
     } catch {
       setCodeError("Code generation failed — please try again.");
     } finally {
       setIsGenerating(false);
     }
-  }, [sessionId]);
+  }, [sessionId, onCodeRegenerated]);
 
   const markStale = useCallback(() => {
     if (iacCode) setIacStale(true);

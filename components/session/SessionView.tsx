@@ -101,10 +101,16 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
     document.addEventListener("mouseup", onUp);
   }, []);
 
+  const [deployOutputStale, setDeployOutputStale] = useState(session.deployOutputStale);
+
+  const handleCodeRegenerated = useCallback(() => {
+    setDeployOutputStale(true);
+  }, []);
+
   const codegen = useCodeGeneration(session.id, {
     iacCode: session.iacCode,
     iacStale: session.iacStale,
-  });
+  }, handleCodeRegenerated);
 
   const chat = useSessionChat(session.id, initialMessages, codegen.markStale);
 
@@ -284,7 +290,8 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
                 lastDestroyOutput={session.lastDestroyOutput}
                 planCredentialProfileId={session.planCredentialProfileId}
                 planRegion={session.planRegion}
-                deployOutputStale={session.deployOutputStale}
+                deployOutputStale={deployOutputStale}
+                onPlanStarted={() => setDeployOutputStale(false)}
                 githubRepo={session.githubRepo}
               />
             )}
