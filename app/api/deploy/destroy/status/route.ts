@@ -61,23 +61,19 @@ export const GET = createGetHandler({ rateLimit: rateLimiter }, async ({ userId,
     return NextResponse.json({ error: "Deploy service unreachable" }, { status: 503 });
   }
 
-  const updates: Record<string, unknown> = {};
-
+  // Persist on status transitions only — not every output change during streaming
   if (statusData.status !== session.lastDestroyStatus) {
-    updates.lastDestroyStatus = statusData.status;
-  }
-  if (statusData.output !== session.lastDestroyOutput) {
-    updates.lastDestroyOutput = statusData.output;
-  }
+    const updates: Record<string, unknown> = {
+      lastDestroyStatus: statusData.status,
+      lastDestroyOutput: statusData.output,
+    };
 
-  // Resources are gone — reset session to active so it can be re-used
-  if (statusData.status === "completed" && session.status !== "active") {
-    updates.status = "active";
-  } else if (statusData.status === "failed" && session.status !== "destroy_failed") {
-    updates.status = "destroy_failed";
-  }
+    if (statusData.status === "completed") {
+      updates.status = "active";
+    } else if (statusData.status === "failed") {
+      updates.status = "destroy_failed";
+    }
 
-  if (Object.keys(updates).length > 0) {
     await getPrisma().session.update({
       where: { id: session.id },
       data: updates,

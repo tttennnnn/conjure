@@ -169,21 +169,22 @@ function runCommand(cmd, args, cwd, env, job) {
   return new Promise((resolve, reject) => {
     const proc = spawn(cmd, args, { cwd, env, stdio: "pipe" });
     job.process = proc;
-    let output = "";
+    const startOffset = job.output.length;
 
     proc.stdout.on("data", (chunk) => {
-      output += chunk.toString();
+      job.output += chunk.toString();
     });
     proc.stderr.on("data", (chunk) => {
-      output += chunk.toString();
+      job.output += chunk.toString();
     });
 
     proc.on("close", (code) => {
       job.process = null;
+      const cmdOutput = job.output.slice(startOffset);
       if (code === 0) {
-        resolve(output);
+        resolve(cmdOutput);
       } else {
-        reject(new Error(output || `${cmd} exited with code ${code}`));
+        reject(new Error(cmdOutput || `${cmd} exited with code ${code}`));
       }
     });
 
@@ -196,10 +197,7 @@ function runCommand(cmd, args, cwd, env, job) {
 
 function finalizeJob(job, status, error) {
   job.status = status;
-  if (error) {
-    job.error = error;
-    job.output += `\nError: ${error}`;
-  }
+  if (error) job.error = error;
   job.completedAt = Date.now();
   job.process = null;
 }
@@ -314,11 +312,8 @@ async function runTerraformJob({ jobId, jobDir, hcl, provider, credentials, regi
     const tfEnv = buildTerraformEnv(provider, credentials, region, jobDir);
     job.status = "running";
 
-    const initOutput = await runCommand("terraform", ["init", "-no-color", "-input=false"], jobDir, tfEnv, job);
-    job.output += initOutput;
-
-    const cmdOutput = await runCommand("terraform", command, jobDir, tfEnv, job);
-    job.output += cmdOutput;
+    await runCommand("terraform", ["init", "-no-color", "-input=false"], jobDir, tfEnv, job);
+    await runCommand("terraform", command, jobDir, tfEnv, job);
 
     finalizeJob(job, "completed", null);
   } catch (err) {

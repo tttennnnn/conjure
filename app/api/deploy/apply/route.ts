@@ -118,7 +118,7 @@ export const POST = createHandler<ApplyRequestBody>(
           { lastApplyClaimedAt: { lt: staleDeadline } },
         ],
       },
-      data: { lastApplyStatus: "pending", lastApplyOutput: null, applyOutputStale: false, lastApplyClaimedAt: new Date() },
+      data: { lastApplyStatus: "pending", lastApplyOutput: null, applyOutputStale: false, destroyOutputStale: true, lastApplyClaimedAt: new Date() },
     });
     if (claimed.count === 0) {
       return NextResponse.json({ error: "An apply is already in progress" }, { status: 409 });

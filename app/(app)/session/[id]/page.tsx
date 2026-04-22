@@ -68,6 +68,7 @@ export default async function SessionPage({
         planRegion: session.planRegion,
         planOutputStale: session.planOutputStale,
         applyOutputStale: session.applyOutputStale,
+        destroyOutputStale: session.destroyOutputStale,
       }}
       initialMessages={session.messages.map((m) => ({
         id: m.id,

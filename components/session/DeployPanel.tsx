@@ -29,8 +29,10 @@ interface DeployPanelProps {
   planRegion: string | null;
   planOutputStale: boolean;
   applyOutputStale: boolean;
+  destroyOutputStale: boolean;
   onPlanStarted: () => void;
   onApplyStarted: () => void;
+  onDestroyStarted: () => void;
   githubRepo: string | null;
 }
 
@@ -52,8 +54,10 @@ export default function DeployPanel({
   planRegion,
   planOutputStale,
   applyOutputStale,
+  destroyOutputStale,
   onPlanStarted,
   onApplyStarted,
+  onDestroyStarted,
   githubRepo,
 }: DeployPanelProps) {
   const [profiles, setProfiles] = useState<CredentialProfileSummary[]>([]);
@@ -137,8 +141,7 @@ export default function DeployPanel({
     plan.status === "completed" && !apply.isRunning && !isStale && !planOutputStale && hasCredentials;
 
   const canDestroy =
-    (apply.status === "completed" || apply.status === "failed") &&
-    destroy.status !== "completed" &&
+    (apply.status === "completed" || apply.status === "failed" || destroy.status === "failed") &&
     !destroy.isRunning &&
     hasCredentials;
 
@@ -195,6 +198,7 @@ export default function DeployPanel({
       "⚠️ DANGER: This will permanently destroy ALL provisioned cloud resources.\n\nThis action cannot be undone. Terraform state will be wiped.",
     );
     if (!confirmed) return;
+    onDestroyStarted();
     destroy.runDestroy({ ...buildCredentialOpts() });
   }
 
@@ -634,7 +638,7 @@ export default function DeployPanel({
 
           {dangerOpen && (
             <div className="mt-3 rounded-md border border-[var(--danger-text)]/30 bg-[var(--danger-bg)] p-3 flex flex-col gap-3">
-              {apply.status === "completed" || apply.status === "failed" ? (
+              {apply.status === "completed" || apply.status === "failed" || destroy.status === "failed" ? (
                 <>
                   <p className="text-[11px] text-[var(--danger-text)] leading-relaxed">
                     Permanently destroys all provisioned cloud resources. This action cannot be undone.
@@ -665,6 +669,7 @@ export default function DeployPanel({
                     output={destroy.output}
                     isRunning={destroy.isRunning}
                     error={destroy.error}
+                    staleMessage={destroyOutputStale && destroy.status ? "From a previous apply cycle — re-run destroy if needed." : null}
                   />
                 </>
               ) : apply.isRunning ? (

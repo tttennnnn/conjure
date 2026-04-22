@@ -47,6 +47,7 @@ interface SessionData {
   planRegion: string | null;
   planOutputStale: boolean;
   applyOutputStale: boolean;
+  destroyOutputStale: boolean;
 }
 
 interface SessionViewProps {
@@ -104,6 +105,7 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
 
   const [planOutputStale, setPlanOutputStale] = useState(session.planOutputStale);
   const [applyOutputStale, setApplyOutputStale] = useState(session.applyOutputStale);
+  const [destroyOutputStale, setDestroyOutputStale] = useState(session.destroyOutputStale);
 
   const handleCodeRegenerated = useCallback(() => {
     setPlanOutputStale(true);
@@ -293,8 +295,10 @@ export default function SessionView({ session, initialMessages }: SessionViewPro
                 planRegion={session.planRegion}
                 planOutputStale={planOutputStale}
                 applyOutputStale={applyOutputStale}
+                destroyOutputStale={destroyOutputStale}
                 onPlanStarted={() => { setPlanOutputStale(false); setApplyOutputStale(true); }}
-                onApplyStarted={() => setApplyOutputStale(false)}
+                onApplyStarted={() => { setApplyOutputStale(false); setDestroyOutputStale(true); }}
+                onDestroyStarted={() => setDestroyOutputStale(false)}
                 githubRepo={session.githubRepo}
               />
             )}

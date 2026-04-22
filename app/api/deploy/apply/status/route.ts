@@ -60,24 +60,19 @@ export const GET = createGetHandler({}, async ({ userId, request }) => {
     return NextResponse.json({ error: "Deploy service unreachable" }, { status: 503 });
   }
 
-  // Persist latest status and update session status on terminal states
-  const updates: Record<string, unknown> = {};
-
+  // Persist on status transitions only — not every output change during streaming
   if (statusData.status !== session.lastApplyStatus) {
-    updates.lastApplyStatus = statusData.status;
-  }
-  if (statusData.output !== session.lastApplyOutput) {
-    updates.lastApplyOutput = statusData.output;
-  }
+    const updates: Record<string, unknown> = {
+      lastApplyStatus: statusData.status,
+      lastApplyOutput: statusData.output,
+    };
 
-  // Update session lifecycle status on terminal apply states
-  if (statusData.status === "completed" && session.status !== "deployed") {
-    updates.status = "deployed";
-  } else if (statusData.status === "failed" && session.status !== "deploy_failed") {
-    updates.status = "deploy_failed";
-  }
+    if (statusData.status === "completed") {
+      updates.status = "deployed";
+    } else if (statusData.status === "failed") {
+      updates.status = "deploy_failed";
+    }
 
-  if (Object.keys(updates).length > 0) {
     await getPrisma().session.update({
       where: { id: session.id },
       data: updates,

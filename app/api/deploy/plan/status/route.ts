@@ -60,8 +60,9 @@ export const GET = createGetHandler({}, async ({ userId, request }) => {
     return NextResponse.json({ error: "Deploy service unreachable" }, { status: 503 });
   }
 
-  // Persist latest status to DB so users can resume after navigating away
-  if (statusData.status !== session.lastPlanStatus || statusData.output !== session.lastPlanOutput) {
+  // Persist on status transitions only — not every output change during streaming.
+  // Client gets live output from deploy service each poll; DB is for resume after page close.
+  if (statusData.status !== session.lastPlanStatus) {
     await getPrisma().session.update({
       where: { id: session.id },
       data: {

@@ -101,7 +101,7 @@ export const POST = createHandler<DestroyRequestBody>(
           { lastDestroyClaimedAt: { lt: staleDeadline } },
         ],
       },
-      data: { lastDestroyStatus: "pending", lastDestroyOutput: null, lastDestroyClaimedAt: new Date() },
+      data: { lastDestroyStatus: "pending", lastDestroyOutput: null, destroyOutputStale: false, lastDestroyClaimedAt: new Date() },
     });
     if (claimed.count === 0) {
       return NextResponse.json({ error: "A destroy is already in progress" }, { status: 409 });
