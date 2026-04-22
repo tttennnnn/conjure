@@ -43,6 +43,15 @@ export const GET = createGetHandler({}, async ({ userId, request }) => {
   let statusData: ApplyStatusResponse;
   try {
     const res = await fetch(`${DEPLOY_SERVICE_URL}/jobs/${jobId}`, { headers });
+    if (res.status === 404) {
+      // Job dropped from deploy-service memory (service restarted mid-job) — mark failed so the slot is reclaimable
+      const lostMsg = "[Job lost — deploy service restarted while this job was running. Re-run the plan and apply.]";
+      await getPrisma().session.update({
+        where: { id: session.id },
+        data: { lastApplyStatus: "failed", lastApplyOutput: lostMsg, status: "deploy_failed" },
+      });
+      return NextResponse.json({ status: "failed", output: lostMsg, error: lostMsg });
+    }
     if (!res.ok) {
       return NextResponse.json({ error: "Deploy service error" }, { status: 502 });
     }

@@ -87,7 +87,9 @@ export const POST = createHandler<DestroyRequestBody>(
     }
 
     // Atomic slot claim — prevent duplicate in-flight destroys
-    const STALE_THRESHOLD_MS = 10 * 60 * 1000;
+    // Must exceed deploy-service HARD_TIMEOUT_MS (20 min) + SIGKILL grace (30s).
+    // Uses lastDestroyClaimedAt (not updatedAt) so unrelated session writes don't reset the window.
+    const STALE_THRESHOLD_MS = 25 * 60 * 1000;
     const staleDeadline = new Date(Date.now() - STALE_THRESHOLD_MS);
 
     const claimed = await getPrisma().session.updateMany({
@@ -96,10 +98,10 @@ export const POST = createHandler<DestroyRequestBody>(
         OR: [
           { lastDestroyStatus: { notIn: ["pending", "running"] } },
           { lastDestroyStatus: null },
-          { updatedAt: { lt: staleDeadline } },
+          { lastDestroyClaimedAt: { lt: staleDeadline } },
         ],
       },
-      data: { lastDestroyStatus: "pending", lastDestroyOutput: null },
+      data: { lastDestroyStatus: "pending", lastDestroyOutput: null, lastDestroyClaimedAt: new Date() },
     });
     if (claimed.count === 0) {
       return NextResponse.json({ error: "A destroy is already in progress" }, { status: 409 });

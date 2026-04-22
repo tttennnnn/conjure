@@ -103,8 +103,10 @@ export const POST = createHandler<ApplyRequestBody>(
     }
 
     // Atomically claim the apply slot — prevents duplicate in-flight applies from a race condition.
-    // Allow overriding a stuck "pending"/"running" status if it's been more than 10 minutes.
-    const STALE_THRESHOLD_MS = 10 * 60 * 1000;
+    // Allow overriding a stuck "pending"/"running" status if it's been more than 25 minutes.
+    // Must exceed deploy-service HARD_TIMEOUT_MS (20 min) + SIGKILL grace (30s).
+    // Uses lastApplyClaimedAt (not updatedAt) so unrelated session writes don't reset the window.
+    const STALE_THRESHOLD_MS = 25 * 60 * 1000;
     const staleDeadline = new Date(Date.now() - STALE_THRESHOLD_MS);
 
     const claimed = await getPrisma().session.updateMany({
@@ -113,10 +115,10 @@ export const POST = createHandler<ApplyRequestBody>(
         OR: [
           { lastApplyStatus: { notIn: ["pending", "running"] } },
           { lastApplyStatus: null },
-          { updatedAt: { lt: staleDeadline } },
+          { lastApplyClaimedAt: { lt: staleDeadline } },
         ],
       },
-      data: { lastApplyStatus: "pending", lastApplyOutput: null, applyOutputStale: false },
+      data: { lastApplyStatus: "pending", lastApplyOutput: null, applyOutputStale: false, lastApplyClaimedAt: new Date() },
     });
     if (claimed.count === 0) {
       return NextResponse.json({ error: "An apply is already in progress" }, { status: 409 });

@@ -487,6 +487,7 @@ export default function DeployPanel({
                 error={apply.error}
                 staleMessage={applyOutputStale && apply.status ? "From a previous plan cycle — run apply again to update." : null}
               />
+
             </div>
           )}
         </section>

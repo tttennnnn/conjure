@@ -39,6 +39,9 @@ model Session {
   planCredentialProfileId String?   @map("plan_credential_profile_id")
   planOutputStale       Boolean   @default(false) @map("plan_output_stale")
   applyOutputStale        Boolean   @default(false) @map("apply_output_stale")
+  lastPlanClaimedAt    DateTime? @map("last_plan_claimed_at")
+  lastApplyClaimedAt   DateTime? @map("last_apply_claimed_at")
+  lastDestroyClaimedAt DateTime? @map("last_destroy_claimed_at")
   messages                Message[]
 
   @@map("sessions")

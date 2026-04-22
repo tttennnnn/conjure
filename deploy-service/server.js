@@ -10,8 +10,8 @@ app.use(express.json({ limit: "2mb" }));
 const PORT = process.env.PORT || 3001;
 const API_KEY = process.env.DEPLOY_SERVICE_API_KEY;
 const MAX_CONCURRENT_JOBS = 5;
-const HARD_TIMEOUT_MS = 5 * 60 * 1000; // 5 min — kill terraform if it hangs
-const COMPLETED_TTL_MS = 10 * 60 * 1000; // 10 min — keep finished jobs for polling
+const HARD_TIMEOUT_MS = 20 * 60 * 1000; // 20 min — kill terraform if it hangs
+const COMPLETED_TTL_MS = 24 * 60 * 60 * 1000; // 24 h — long enough for users to resume polling after closing the tab
 
 // In-memory job store: jobId -> { status, output, error, createdAt, completedAt, process }
 const jobs = new Map();
@@ -72,6 +72,7 @@ function createJob() {
     createdAt: Date.now(),
     completedAt: null,
     process: null,
+    killing: false,
   });
   return { jobId, jobDir };
 }
@@ -143,7 +144,7 @@ function buildTerraformEnv(provider, credentials, region, jobDir) {
     };
   }
 
-  // GCP: write SA JSON inside the job dir so cleanup() deletes it
+  // GCP: write SA JSON inside the job dir so cleanupJobDir() deletes it
   const saPath = path.join(jobDir, "sa.json");
   fs.writeFileSync(saPath, credentials.serviceAccountJson, "utf8");
   const env = {
@@ -323,8 +324,8 @@ async function runTerraformJob({ jobId, jobDir, hcl, provider, credentials, regi
   } catch (err) {
     finalizeJob(job, "failed", err.message || "Unknown error");
   } finally {
-    // Schedule temp dir cleanup after TTL from completion
-    setTimeout(() => cleanup(jobId, jobDir), COMPLETED_TTL_MS);
+    // Delete credentials and HCL from disk immediately — only status/output stay in memory for polling
+    cleanupJobDir(jobDir);
   }
 }
 
@@ -332,13 +333,16 @@ async function runTerraformJob({ jobId, jobDir, hcl, provider, credentials, regi
 // Cleanup
 // ---------------------------------------------------------------------------
 
-function cleanup(jobId, jobDir) {
-  jobs.delete(jobId);
+function cleanupJobDir(jobDir) {
   try {
     fs.rmSync(jobDir, { recursive: true, force: true });
   } catch {
     // Best effort
   }
+}
+
+function evictJob(jobId) {
+  jobs.delete(jobId);
 }
 
 // Periodic sweeper: timeout runaway jobs, clean up old completed ones
@@ -348,15 +352,28 @@ setInterval(() => {
     if (job.status === "completed" || job.status === "failed") {
       // Clean up terminal jobs after TTL from completion
       if (job.completedAt && now - job.completedAt > COMPLETED_TTL_MS) {
-        cleanup(jobId, path.join("/tmp/jobs", jobId));
+        evictJob(jobId);
       }
     } else {
       // Kill runaway non-terminal jobs past hard timeout
-      if (now - job.createdAt > HARD_TIMEOUT_MS) {
+      if (now - job.createdAt > HARD_TIMEOUT_MS && !job.killing) {
+        job.killing = true;
         if (job.process) {
-          try { job.process.kill("SIGTERM"); } catch { /* already exited */ }
+          // SIGINT lets Terraform release the state lock before exiting.
+          // Do NOT call finalizeJob here — runTerraformJob's catch block handles
+          // that once the process exits and runCommand's close event fires.
+          job.output += "\n[Timed out — interrupting to release state lock]";
+          try { job.process.kill("SIGINT"); } catch { /* already exited */ }
+          // Escalate to SIGKILL after 30s if Terraform ignores SIGINT
+          setTimeout(() => {
+            if (job.process) {
+              try { job.process.kill("SIGKILL"); } catch { /* already exited */ }
+            }
+          }, 30_000);
+        } else {
+          // No process (stuck in pre-spawn state) — finalize directly
+          finalizeJob(job, "failed", "Job timed out");
         }
-        finalizeJob(job, "failed", "Job timed out");
       }
     }
   }
