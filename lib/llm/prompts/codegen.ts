@@ -73,6 +73,9 @@ export function buildCodegenSystemPrompt(
     providerRules.push(
       `GCP PROJECT ID: Always use var.project_id for the project argument in every GCP resource and data source. Declare it in variables.tf as: variable "project_id" { type = string; default = "" }. Never hardcode a project ID string.`,
     );
+    providerRules.push(
+      `DELETION PROTECTION: Set deletion_protection = false on google_sql_database_instance and any other GCP resource that enables it by default. Without this, terraform destroy will fail.`,
+    );
   }
 
   if (targetEnv.toLowerCase() === "aws") {
